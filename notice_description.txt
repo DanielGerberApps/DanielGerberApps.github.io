@@ -1,3 +1,5 @@
-Some people reported that sounds are not playing after upgrading from the old version of this app. If that happens, simply reinstall the app and it should resolve the issue. Apologies for the hassle!
+*If sounds are not playing after upgrading, simply reinstall the app and it should resolve the issue. Apologies for the hassle!
 
-Also, I've received a lot of feedback about the new UI. Please email me your thoughts as I look to further improve the app!
+*Alarms from the old version will not appear anymore. This is due to changing the backend of the app and is not expected to happen again.
+
+*Also, I've received a lot of feedback about the new UI. Please email me your thoughts as I look to further improve the app!
