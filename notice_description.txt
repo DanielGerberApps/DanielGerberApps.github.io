@@ -2,4 +2,4 @@
 
 *Alarms from the old version will not appear anymore. This is due to changing the backend of the app and is not expected to happen again.
 
-*Also, I've received a lot of feedback about the new UI. Please email me your thoughts as I look to further improve the app!
+*I've received a lot of feedback about the new UI. Please email me your thoughts as I look to further improve the app!
