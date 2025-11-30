@@ -1,4 +1,4 @@
-Some people reported that sounds are not playing after upgrading from the 1.x version of this app. If that happens, simply reinstall the app and it should resolve the issue. Apologies for the hassle!
+Some people reported that sounds are not playing after upgrading from the old version of this app. If that happens, simply reinstall the app and it should resolve the issue. Apologies for the hassle!
 
 Also, I've received a lot of feedback about the new UI. Please email me your thoughts as I look to further improve the app!
 DanielGerberApps@gmail.com
