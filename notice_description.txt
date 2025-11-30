@@ -1,1 +1,3 @@
-I've received reports that no sounds play after upgrading from the previous app version. If that happens, simply reinstall the app and it should resolve the issue. Apologies for the hassle!
+I've received reports that no sounds play after upgrading from the previous app version.
+
+If that happens, simply reinstall the app and it should resolve the issue. Apologies for the hassle!
