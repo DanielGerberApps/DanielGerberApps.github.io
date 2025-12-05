@@ -79,48 +79,57 @@
             </p>
         </header>
 
-        <!-- Screenshots Section -->
+        <!-- Screenshots Section - ENFORCING MAX 2 PER ROW -->
         <section class="py-10">
             <h2 class="text-3xl font-bold text-center text-gray-800 mb-10">Key Features</h2>
-            <div class="flex flex-wrap justify-center gap-8">
+            
+            <!-- Outer container to stack rows vertically and keep them centered -->
+            <div class="flex flex-col items-center gap-8">
 
-                <!-- Screenshot Card 1: Alarm Setup - Now using reliable placeholder -->
-                <div class="screenshot-card bg-gray-50 p-4 rounded-xl shadow-xl">
-                    <img class="rounded-lg shadow-md" 
-                         src="Image Sequence_017_0000.png" 
-                         alt="App Screenshot showing the main alarm setup dashboard with Shabbat and holiday alarms"
-                         onerror="this.onerror=null;this.src='https://placehold.co/280x500/07628F/BBFF32?text=Alarm+Scheduling+Screen'">
-                    <p class="text-center text-sm font-medium text-gray-600 mt-3">Simple Alarm Scheduling</p>
-                </div>
-                
-                <!-- Screenshot Card 2: Custom Ringtones -->
-                <div class="screenshot-card bg-gray-50 p-4 rounded-xl shadow-xl">
-                    <!-- Placeholder URL with app-blue background and app-accent text -->
-                    <img class="rounded-lg shadow-md" 
-                         src="Image Sequence_018_0000.png" 
-                         alt="App Screenshot showing ringtone selection and recording feature"
-                         onerror="this.onerror=null;this.src='https://placehold.co/280x500/07628F/BBFF32?text=Ringtone+Options+%26+Recorder'">
-                    <p class="text-center text-sm font-medium text-gray-600 mt-3">Easy to make changes</p>
-                </div>
-                
-                <!-- Screenshot Card 3: Holiday/Yom Tov Support -->
-                <div class="screenshot-card bg-gray-50 p-4 rounded-xl shadow-xl hidden md:block">
-                    <!-- Placeholder URL with app-blue background and app-accent text -->
-                    <img class="rounded-lg shadow-md" 
-                         src="Image Sequence_019_0000.png" 
-                         alt="App Screenshot showing options for two or three day holidays"
-                         onerror="this.onerror=null;this.src='https://placehold.co/280x500/07628F/BBFF32?text=Yom+Tov+%26+3-Day+Support'">
-                    <p class="text-center text-sm font-medium text-gray-600 mt-3">Choose your favorite ringtons</p>
+                <!-- ROW 1: Two primary screenshots (Always visible, stacks on mobile) -->
+                <div class="flex flex-wrap justify-center gap-8 w-full max-w-2xl">
+                    <!-- Screenshot Card 1: Alarm Setup -->
+                    <div class="screenshot-card bg-gray-50 p-4 rounded-xl shadow-xl">
+                        <img class="rounded-lg shadow-md" 
+                             src="Image Sequence_017_0000.png" 
+                             alt="App Screenshot showing the main alarm setup dashboard with Shabbat and holiday alarms"
+                             onerror="this.onerror=null;this.src='https://placehold.co/280x500/07628F/BBFF32?text=Alarm+Scheduling+Screen'">
+                        <p class="text-center text-sm font-medium text-gray-600 mt-3">Simple Alarm Scheduling</p>
+                    </div>
+                    
+                    <!-- Screenshot Card 2: Custom Ringtones -->
+                    <div class="screenshot-card bg-gray-50 p-4 rounded-xl shadow-xl">
+                        <!-- Placeholder URL with app-blue background and app-accent text -->
+                        <img class="rounded-lg shadow-md" 
+                             src="Image Sequence_018_0000.png" 
+                             alt="App Screenshot showing ringtone selection and recording feature"
+                             onerror="this.onerror=null;this.src='https://placehold.co/280x500/07628F/BBFF32?text=Ringtone+Options+%26+Recorder'">
+                        <p class="text-center text-sm font-medium text-gray-600 mt-3">Easy to make changes</p>
+                    </div>
                 </div>
 
-                <!-- Screenshot Card 3: Holiday/Yom Tov Support -->
-                <div class="screenshot-card bg-gray-50 p-4 rounded-xl shadow-xl hidden md:block">
-                    <!-- Placeholder URL with app-blue background and app-accent text -->
-                    <img class="rounded-lg shadow-md" 
-                         src="Image Sequence_020_0000.png" 
-                         alt="App Screenshot showing options for two or three day holidays"
-                         onerror="this.onerror=null;this.src='https://placehold.co/280x500/07628F/BBFF32?text=Yom+Tov+%26+3-Day+Support'">
-                    <p class="text-center text-sm font-medium text-gray-600 mt-3">Record your own ringtone</p>
+                <!-- ROW 2: Two secondary screenshots (Hidden on mobile, uses flex on md: screens) -->
+                <!-- The max-w-2xl ensures this row maintains the same width constraint as Row 1 -->
+                <div class="hidden md:flex flex-wrap justify-center gap-8 w-full max-w-2xl">
+                    <!-- Screenshot Card 3: Holiday/Yom Tov Support -->
+                    <div class="screenshot-card bg-gray-50 p-4 rounded-xl shadow-xl">
+                        <!-- Placeholder URL with app-blue background and app-accent text -->
+                        <img class="rounded-lg shadow-md" 
+                             src="Image Sequence_019_0000.png" 
+                             alt="App Screenshot showing options for two or three day holidays"
+                             onerror="this.onerror=null;this.src='https://placehold.co/280x500/07628F/BBFF32?text=Yom+Tov+%26+3-Day+Support'">
+                        <p class="text-center text-sm font-medium text-gray-600 mt-3">Choose your favorite ringtons</p>
+                    </div>
+
+                    <!-- Screenshot Card 4: Record your own ringtone -->
+                    <div class="screenshot-card bg-gray-50 p-4 rounded-xl shadow-xl">
+                        <!-- Placeholder URL with app-blue background and app-accent text -->
+                        <img class="rounded-lg shadow-md" 
+                             src="Image Sequence_020_0000.png" 
+                             alt="App Screenshot showing options for two or three day holidays"
+                             onerror="this.onerror=null;this.src='https://placehold.co/280x500/07628F/BBFF32?text=Yom+Tov+%26+3-Day+Support'">
+                        <p class="text-center text-sm font-medium text-gray-600 mt-3">Record your own ringtone</p>
+                    </div>
                 </div>
 
             </div>
@@ -133,12 +142,12 @@
             <p class="text-lg text-gray-600 mb-8">Stop guessing if your alarm is set correctly. Test it, set it, and rest easy.</p>
 
             <div class="badge-container flex flex-col sm:flex-row justify-center items-center gap-6">
-                <!-- Google Play Badge (Updated Fallback Color to app-blue) -->
+                <!-- Google Play Badge (Increased by 10%) -->
                 <a href="https://play.google.com/store/apps/details?id=com.DanielGerber.ShabbatAlarmClock" target="_blank" rel="noopener noreferrer" class="shadow-lg hover:shadow-xl transform hover:scale-[1.03] transition-transform duration-300 rounded-lg">
                     <img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png" 
                          alt="Get it on Google Play" 
-                         class="h-[50px] max-w-[270px] w-auto object-contain block"
-                         onerror="this.onerror=null;this.src='https://placehold.co/270x50/07628F/BBFF32?text=Google+Play'">
+                         class="h-[55px] max-w-[297px] w-auto object-contain block"
+                         onerror="this.onerror=null;this.src='https://placehold.co/297x55/07628F/BBFF32?text=Google+Play'">
                 </a>
 
                 <!-- Apple App Store Badge -->
@@ -162,7 +171,7 @@
                 <a href="#support" class="text-gray-600 hover:text-app-blue transition">Contact Support</a>
             </nav>
             <p class="mt-4 text-gray-500 text-xs">
-                &copy; 2024 Shabbat Alarm Clock. All rights reserved.
+                &copy; 2025 Daniel Gerber. All rights reserved.
             </p>
         </footer>
 
