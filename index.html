@@ -66,13 +66,14 @@
 
         <!-- Header Section -->
         <header class="text-center py-10 px-4">
-            <!-- Updated Icon Background to app-blue -->
-            <div class="inline-block p-3 bg-app-blue rounded-xl shadow-lg">
-                <!-- REPLACE [YOUR_ICON_URL_HERE] with the image link for your app icon/logo (ideally 40x40px) -->
-                <img class="w-10 h-10 object-contain" 
+            <!-- FIX: Removed 'p-3 bg-app-blue rounded-xl shadow-lg' from the container div. -->
+            <!-- The logo image now stands alone, preventing background clash. -->
+            <div class="inline-block">
+                <!-- Increased size to w-16 h-16 for prominence -->
+                <img class="w-16 h-16 object-contain rounded-xl shadow-lg" 
                      src="sac_icon.png" 
                      alt="Shabbat Alarm Clock Logo"
-                     onerror="this.onerror=null;this.src='https://placehold.co/40x40/07628F/BBFF32?text=Logo'">
+                     onerror="this.onerror=null;this.src='https://placehold.co/64x64/07628F/BBFF32?text=Logo'">
             </div>
             <h1 class="text-5xl font-extrabold text-gray-900 mt-4">Shabbat Alarm Clock</h1>
             
