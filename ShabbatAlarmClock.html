@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <script type="text/javascript">
+    var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    var appStoreLink = "https://apps.apple.com/us/app/shabbat-alarm-clock/id1485334479";
+    var playStoreLink = "https://play.google.com/store/apps/details?id=com.DanielGerber.ShabbatAlarmClock";
+    var fallbackLink = "https://danielgerberapps.github.io/index.html"; // for desktop or other OS
+
+    // iOS detection
+    if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        window.location.href = appStoreLink;
+    }
+    // Android detection
+    else if (/android/i.test(userAgent)) {
+        window.location.href = playStoreLink;
+    }
+    // Fallback for desktop or other devices
+    else {
+        window.location.href = fallbackLink;
+    }
+</script>
+  </head>
+  
+</html>
