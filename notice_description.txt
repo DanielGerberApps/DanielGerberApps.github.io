@@ -2,4 +2,4 @@
 
 *If sounds are not playing after upgrading, simply reinstall the app and it should resolve the issue. Apologies for the hassle!
 
-*I've received a lot of feedback about the new UI. Please email me your thoughts as I look to further improve the app!
+*An issue with the custom ringtone recorder has been fixed.
