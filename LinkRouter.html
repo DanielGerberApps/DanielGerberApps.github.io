@@ -1,19 +1,24 @@
-<!DOCTYPE html>
 <html>
-<head>
-    <title>Page Moved</title>
+  <head>
     <script type="text/javascript">
-        // The path to the new page, relative or absolute.
-        var newURL = "ShabbatAlarmClock.html";
+    var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    var appStoreLink = "https://apps.apple.com/us/app/shabbat-alarm-clock/id1485334479";
+    var playStoreLink = "https://play.google.com/store/apps/details?id=com.DanielGerber.ShabbatAlarmClock";
+    var fallbackLink = "https://danielgerberapps.github.io/index.html"; // for desktop or other OS
 
-        // Redirect instantly
-        window.location.replace(newURL);
-
-        // Alternatively, use window.location.href = newURL; 
-        // but .replace() is better as it prevents the user from going back to the old page in history.
-    </script>
-</head>
-<body>
-    <p>If you are not redirected, click <a href="https://yourusername.github.io/yourrepo/new-page.html">here</a>.</p>
-</body>
+    // iOS detection
+    if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        window.location.href = appStoreLink;
+    }
+    // Android detection
+    else if (/android/i.test(userAgent)) {
+        window.location.href = playStoreLink;
+    }
+    // Fallback for desktop or other devices
+    else {
+        window.location.href = fallbackLink;
+    }
+</script>
+  </head>
+  
 </html>
