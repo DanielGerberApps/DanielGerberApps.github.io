@@ -1,5 +1,4 @@
-*Alarms from the old version will not appear anymore. This is due to changing the backend of the app and is not expected to happen again.
+NEW FEATURE
+*Quick Reschedule: tap the 1,2,3 buttons to reschedule an alarm 1, 2, or 3 days from the current day and time!
 
-*If sounds are not playing after upgrading, simply reinstall the app and it should resolve the issue. Apologies for the hassle!
-
-*An issue with the custom ringtone recorder has been fixed.
+*If sounds are not playing after upgrading, simply reinstall the app and it should resolve the issue.
