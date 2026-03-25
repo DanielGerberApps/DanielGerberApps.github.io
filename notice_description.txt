@@ -1,4 +1,4 @@
 NEW FEATURE
-*Quick Reschedule: tap the 1,2,3 buttons to reschedule an alarm 1, 2, or 3 days from the current day and time!
+*Tap the 1,2,3 buttons to reschedule an alarm 1, 2, or 3 days from the current day and time!
 
 *If sounds are not playing after upgrading, simply reinstall the app and it should resolve the issue.
