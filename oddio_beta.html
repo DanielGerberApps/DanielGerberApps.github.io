@@ -98,6 +98,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .bbt:active{transform:scale(.95)}
 .bbl{font-size:9px;color:rgba(234,242,255,.35);margin-top:1px}
 #mvcnt{font-size:24px;font-weight:500}
+#tmcnt{font-size:20px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.3px;color:#EAF2FF}
 #game-area{position:relative;overflow:hidden;background:#0C1523;border-radius:14px}
 /* Win overlay — full coverage, game-area clips it to rounded shape */
 #win{display:none;position:absolute;inset:0;background:#070D18;flex-direction:column;align-items:center;justify-content:center;gap:0;z-index:30}
@@ -125,6 +126,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 #win-card h2{font-size:20px;font-weight:600;margin:0;letter-spacing:1px}
 #win-sub{font-size:10px;color:rgba(234,242,255,.4);text-align:center;line-height:1.5;margin:0}
 #win .mv{font-size:12px;color:#4DA3FF;font-weight:500}
+#win-par{font-size:11px;color:rgba(234,242,255,.5);font-weight:500;letter-spacing:.2px;margin-top:-3px}
 /* Mini board */
 #win-board{display:flex;flex-direction:column;gap:3px;margin:2px 0}
 #win-board .wb-row{display:flex;gap:3px}
@@ -143,7 +145,38 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 #share-toast{font-size:10px;color:rgba(76,217,100,.7);height:11px;text-align:center;letter-spacing:.5px}
 
 
-/* Solution overlay on tiles */
+/* ── Tutorial overlay ────────────────────────────────────── */
+#tut{display:none;position:absolute;inset:0;background:#0C1523;border-radius:16px;z-index:60;flex-direction:column;align-items:center;justify-content:space-between;padding:22px 20px 18px}
+#tut.show{display:flex}
+#tut-header{width:100%;display:flex;justify-content:space-between;align-items:center}
+#tut-step-label{font-size:10px;color:rgba(234,242,255,.3);letter-spacing:1.5px;font-weight:600}
+#tut-skip{background:none;border:none;color:rgba(234,242,255,.3);font-size:11px;cursor:pointer;padding:4px 8px;border-radius:6px}
+#tut-skip:hover{color:rgba(234,242,255,.6)}
+#tut-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:10px 0}
+#tut-title{font-size:21px;font-weight:700;letter-spacing:.5px}
+#tut-desc{font-size:12px;color:rgba(234,242,255,.5);line-height:1.7;max-width:260px}
+#tut-visual{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0}
+/* Tutorial mini-tiles */
+.tt{width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.tt.e{background:#162033;color:#4DA3FF;border:1.5px dashed rgba(77,163,255,.55)}
+.tt.o{background:#1E1826;color:#FF6B6B;border:1.5px dashed rgba(255,107,107,.55)}
+.tt.lk{background:#0D1620;color:rgba(255,255,255,.75);border:1.5px solid rgba(255,255,255,.2);cursor:default}
+.tt.ok{border-style:solid}
+/* Row/col indicator mini */
+.tind{width:22px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.tind.e{background:rgba(77,163,255,.12);color:rgba(77,163,255,.6)}
+.tind.o{background:rgba(255,107,107,.12);color:rgba(255,107,107,.6)}
+.tind.sat{background:rgba(77,163,255,.28);color:#4DA3FF}
+/* Arrow */
+.t-arr{font-size:18px;color:rgba(234,242,255,.25)}
+/* Tutorial dots */
+#tut-dots{display:flex;gap:6px;margin-bottom:12px}
+.tdot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);transition:background .2s}
+.tdot.on{background:#4DA3FF}
+/* Tutorial next button */
+#tut-next{background:#4DA3FF;color:#071018;border:none;border-radius:11px;padding:12px 36px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
+#tut-next:active{transform:scale(.97)}
+
 .tile .sol-ov{
   position:absolute;inset:0;border-radius:9px;
   display:flex;align-items:center;justify-content:center;
@@ -179,6 +212,10 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
       <div id="mvcnt">0</div>
       <div class="bbl" style="font-size:10px">Moves</div>
     </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div id="tmcnt">0.000</div>
+      <div class="bbl" style="font-size:10px">Time</div>
+    </div>
     <button class="bbt" onclick="doHint()">
       <span style="font-size:15px;position:relative">💡<span id="hc" style="position:absolute;top:-4px;right:-8px;background:#4DA3FF;color:#071018;border-radius:50%;width:12px;height:12px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:700">3</span></span>
       <span class="bbl">Hint</span>
@@ -190,6 +227,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
       <h2>✓ Solved</h2>
       <div id="win-sub">All rows, columns &amp; subgrids match their parity.</div>
       <div class="mv" id="winmv"></div>
+      <div id="win-par"></div>
       <div id="win-board"></div>
       <div id="share-toast"></div>
       <div id="win-btns">
@@ -208,6 +246,22 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
       <button id="banner-nxt-btn" onclick="nextLevel()">Next Level →</button>
     </div>
   </div>
+  </div>
+  <!-- ── Tutorial overlay ── -->
+  <div id="tut">
+    <div id="tut-header">
+      <span id="tut-step-label">STEP 1 OF 4</span>
+      <button id="tut-skip" onclick="tutSkip()">Skip →</button>
+    </div>
+    <div id="tut-body">
+      <div id="tut-title"></div>
+      <div id="tut-visual"></div>
+      <div id="tut-desc"></div>
+    </div>
+    <div style="width:100%;display:flex;flex-direction:column;align-items:center">
+      <div id="tut-dots"></div>
+      <button id="tut-next" onclick="tutNext()">Next →</button>
+    </div>
   </div>
 </div>
 
@@ -558,7 +612,8 @@ function initSt(p){
     startVals:[...p.vals],           // snapshot of starting state for debug re-verify
     solVals:p.solVals||[...p.vals],  // the unique solution for debug overlay
     locked:[...p.locked],rp:p.rp,cp:p.cp,sgs:p.sgs||[],
-    moves:0,solved:false
+    moves:0,solved:false,
+    startTime:null,solveTime:null,timerPending:false
   };
   undos=[];hintCharges=3;
   solShowing=false;
@@ -575,6 +630,57 @@ function clearHint(el){
   el.querySelector('.tile-num').style.opacity='';
   el.classList.remove('hinting');
   clearTimeout(+el.dataset.hintTimer);
+}
+
+/* ── Timer ────────────────────────────────────────────────────
+   Wall-clock solve timer. Starts when the board first becomes
+   visible to the player (deferred while the tutorial overlay
+   covers the board on first load) and freezes the moment the
+   puzzle is solved. Format: M:SS.mmm above 60 s, S.mmm below.
+   requestAnimationFrame gives smooth millisecond updates and
+   pauses cleanly when the tab is backgrounded.                */
+let timerRAF=null;
+function fmtTime(ms){
+  ms=Math.max(0,Math.floor(ms));
+  const totalSec=Math.floor(ms/1000);
+  const millis=ms%1000;
+  const min=Math.floor(totalSec/60);
+  const sec=totalSec%60;
+  const ms3=String(millis).padStart(3,'0');
+  return min>0
+    ?`${min}:${String(sec).padStart(2,'0')}.${ms3}`
+    :`${sec}.${ms3}`;
+}
+function updateTimerDisplay(ms){
+  const el=document.getElementById('tmcnt');
+  if(el)el.textContent=fmtTime(ms);
+}
+function startTimer(){
+  if(timerRAF){cancelAnimationFrame(timerRAF);timerRAF=null;}
+  // Defer if the tutorial is currently covering the board —
+  // tutSkip() will call us again once it's dismissed.
+  if(document.getElementById('tut')?.classList.contains('show')){
+    st.timerPending=true;
+    updateTimerDisplay(0);
+    return;
+  }
+  st.timerPending=false;
+  st.startTime=performance.now();
+  st.solveTime=null;
+  updateTimerDisplay(0);
+  const tick=()=>{
+    if(!st||st.solved||st.startTime==null){timerRAF=null;return;}
+    updateTimerDisplay(performance.now()-st.startTime);
+    timerRAF=requestAnimationFrame(tick);
+  };
+  timerRAF=requestAnimationFrame(tick);
+}
+function stopTimer(){
+  if(timerRAF){cancelAnimationFrame(timerRAF);timerRAF=null;}
+  if(st&&st.startTime!=null&&st.solveTime==null){
+    st.solveTime=performance.now()-st.startTime;
+    updateTimerDisplay(st.solveTime);
+  }
 }
 
 /* ── Actions ─────────────────────────────────────────────── */
@@ -671,6 +777,11 @@ function refresh(){
 /* ── Win ─────────────────────────────────────────────────── */
 function doWin(){
   st.solved=true;
+  stopTimer();
+  // Min moves = number of unlocked tiles whose start value differs from
+  // the (unique) solution. Each such tile must flip at least once, and
+  // since the solution is unique, this lower bound is exact.
+  st.minMoves=st.locked.reduce((s,lk,i)=>s+(!lk&&st.startVals[i]!==st.solVals[i]?1:0),0);
   document.querySelectorAll('.tile').forEach((el,i)=>{
     setTimeout(()=>{
       el.style.transition='transform .14s,border-color .22s';
@@ -679,7 +790,13 @@ function doWin(){
     },i*30);
   });
   setTimeout(()=>{
-    document.getElementById('winmv').textContent=`Solved in ${st.moves} move${st.moves!==1?'s':''}`;
+    document.getElementById('winmv').textContent=`Solved in ${st.moves} move${st.moves!==1?'s':''} · ${fmtTime(st.solveTime)}`;
+    // Comparison line — kept on its own row to avoid colliding visually with
+    // the timer (where "min" could be misread as the minutes abbreviation).
+    const par=document.getElementById('win-par');
+    par.textContent=st.moves===st.minMoves
+      ?`Solved in the fewest possible moves`
+      :`Fewest possible: ${st.minMoves} move${st.minMoves!==1?'s':''}`;
     buildWinBoard();
     document.getElementById('win').classList.add('show');
   },N*N*30+260);
@@ -720,7 +837,7 @@ function toggleWinBoard(){
 }
 function shareWin(){
   const diffNames=['Easy','Medium','Hard'];
-  const minMoves=st.locked.reduce((s,lk,i)=>s+(!lk&&st.startVals[i]!==st.solVals[i]?1:0),0);
+  const minMoves=st.minMoves;
   let grid='';
   for(let r=0;r<N;r++){
     for(let c=0;c<N;c++){
@@ -730,7 +847,7 @@ function shareWin(){
     }
     grid+='\n';
   }
-  const text=`ODDIO — Level ${lvl} (${diffNames[diff]})\nSolved in ${st.moves} move${st.moves!==1?'s':''} 🎯  (min: ${minMoves})\n\n${grid}\nhttps://oddio.game`;
+  const text=`ODDIO — Level ${lvl} (${diffNames[diff]})\nSolved in ${st.moves} move${st.moves!==1?'s':''} 🎯  (fewest possible: ${minMoves})\n⏱️ ${fmtTime(st.solveTime)}\n\n${grid}\nhttps://oddio.game`;
   const toast=document.getElementById('share-toast');
   const btn=document.getElementById('share-btn');
   navigator.clipboard.writeText(text).then(()=>{
@@ -790,6 +907,7 @@ function build(){
   document.getElementById('toggle-board').textContent='Show Board 👁';
   refresh();
   document.getElementById('msg').textContent='Tap a tile to flip its value';
+  startTimer();
 }
 
 /* ── Navigation ──────────────────────────────────────────── */
@@ -849,7 +967,113 @@ function toggleSolution(){
   });
 }
 
-load(1);
-</script>
+/* ── Tutorial ─────────────────────────────────────────────── */
+const TUT_STEPS=[
+  {
+    title:'Welcome to ODDIO',
+    desc:'Fill the grid so every row, column, and bracket has the right number of 1s — <strong style="color:#4DA3FF">Even</strong> or <strong style="color:#FF6B6B">Odd</strong>.',
+    visual:`<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div style="font-size:10px;color:rgba(234,242,255,.3);letter-spacing:1px;margin-bottom:2px">EXAMPLE</div>
+      <div style="display:flex;gap:5px;align-items:center">
+        <div style="width:22px;height:36px;border-radius:7px;background:rgba(77,163,255,.12);color:rgba(77,163,255,.6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">E</div>
+        <div class="tt e" style="width:36px;height:36px;font-size:15px">0</div>
+        <div class="tt o" style="width:36px;height:36px;font-size:15px">1</div>
+        <div class="tt e" style="width:36px;height:36px;font-size:15px">0</div>
+        <div class="tt o" style="width:36px;height:36px;font-size:15px">1</div>
+        <div class="tt e" style="width:36px;height:36px;font-size:15px;border-style:solid">0</div>
+      </div>
+      <div style="font-size:10px;color:rgba(77,163,255,.65)">Two 1s in this row — that's even ✓</div>
+    </div>`
+  },
+  {
+    title:'Tap to flip',
+    desc:'Tap a tile to switch it between <strong style="color:#EAF2FF">0 and 1</strong>. Solid tiles are locked — they\'re clues to help you solve the puzzle.',
+    visual:`<div style="display:flex;gap:28px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:5px">
+          <div class="tt o" style="width:46px;height:46px;font-size:22px">1</div>
+          <div style="font-size:16px;color:rgba(234,242,255,.3)">→</div>
+          <div class="tt e" style="width:46px;height:46px;font-size:22px">0</div>
+        </div>
+        <div style="font-size:10px;color:rgba(234,242,255,.5);letter-spacing:.8px;font-weight:600">YOU CAN TAP</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;height:46px">
+          <div class="tt lk" style="width:46px;height:46px;font-size:22px">1</div>
+        </div>
+        <div style="font-size:10px;color:rgba(234,242,255,.5);letter-spacing:.8px;font-weight:600">LOCKED</div>
+      </div>
+    </div>`
+  },
+  {
+    title:'Read the edges',
+    desc:'Letters on the edges show each line\'s goal. <strong style="color:#4DA3FF">E</strong> = an <strong>even</strong> number of 1s. <strong style="color:#FF6B6B">O</strong> = an <strong>odd</strong> number of 1s.',
+    visual:`<div style="display:flex;flex-direction:column;gap:4px">
+      <div style="display:flex;gap:4px;align-items:center">
+        <div style="width:22px;height:36px;border-radius:7px;background:rgba(77,163,255,.12);color:rgba(77,163,255,.6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">E</div>
+        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
+        <div class="tt o" style="width:36px;height:36px;font-size:14px;border-style:solid">1</div>
+        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
+        <div class="tt e" style="width:36px;height:36px;font-size:14px;border-style:solid">0</div>
+        <div class="tt o" style="width:36px;height:36px;font-size:14px;border-style:solid">1</div>
+        <div style="font-size:14px;margin-left:2px">✓</div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <div style="width:22px;height:36px;border-radius:7px;background:rgba(255,107,107,.12);color:rgba(255,107,107,.6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">O</div>
+        <div class="tt e" style="width:36px;height:36px;font-size:14px;border-style:solid">0</div>
+        <div class="tt lk" style="width:36px;height:36px;font-size:14px">1</div>
+        <div class="tt o" style="width:36px;height:36px;font-size:14px;border-style:solid">1</div>
+        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
+        <div class="tt e" style="width:36px;height:36px;font-size:14px;border-style:solid">0</div>
+        <div style="font-size:14px;margin-left:2px">✓</div>
+      </div>
+    </div>`
+  },
+  {
+    title:'Brackets & hints',
+    desc:'Harder levels add <strong style="color:#EAF2FF">brackets</strong> — small 2×2 squares with their own E or O goal. Stuck? Tap 💡 for a hint (you get 3).',
+    visual:`<div style="display:flex;align-items:center;gap:24px">
+      <div style="position:relative;padding:8px">
+        <div style="display:grid;grid-template-columns:repeat(2,40px);gap:4px">
+          <div class="tt o" style="width:40px;height:40px;font-size:18px">1</div>
+          <div class="tt lk" style="width:40px;height:40px;font-size:18px">0</div>
+          <div class="tt lk" style="width:40px;height:40px;font-size:18px">0</div>
+          <div class="tt o" style="width:40px;height:40px;font-size:18px">1</div>
+        </div>
+        <div style="position:absolute;top:2px;left:2px;width:13px;height:13px;border-top:2.5px solid #FF6B6B;border-left:2.5px solid #FF6B6B;border-radius:4px 0 0 0"></div>
+        <div style="position:absolute;top:2px;right:2px;width:13px;height:13px;border-top:2.5px solid #FF6B6B;border-right:2.5px solid #FF6B6B;border-radius:0 4px 0 0"></div>
+        <div style="position:absolute;bottom:2px;left:2px;width:13px;height:13px;border-bottom:2.5px solid #FF6B6B;border-left:2.5px solid #FF6B6B;border-radius:0 0 0 4px"></div>
+        <div style="position:absolute;bottom:2px;right:2px;width:13px;height:13px;border-bottom:2.5px solid #FF6B6B;border-right:2.5px solid #FF6B6B;border-radius:0 0 4px 0"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#0C1523;border:1.5px solid #FF6B6B;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#FF6B6B">O</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="font-size:28px">💡</div>
+        <div style="font-size:10px;color:rgba(255,214,10,.65);font-weight:600;letter-spacing:.5px">3 HINTS</div>
+      </div>
+    </div>`
+  }
+];
+let tutStep=0;
+function tutRender(){
+  const s=TUT_STEPS[tutStep];
+  document.getElementById('tut-title').textContent=s.title;
+  document.getElementById('tut-visual').innerHTML=s.visual;
+  document.getElementById('tut-desc').innerHTML=s.desc;
+  document.getElementById('tut-step-label').textContent=`STEP ${tutStep+1} OF ${TUT_STEPS.length}`;
+  document.getElementById('tut-next').textContent=tutStep===TUT_STEPS.length-1?'Play! →':'Next →';
+  const dots=document.getElementById('tut-dots');dots.innerHTML='';
+  TUT_STEPS.forEach((_,i)=>{const d=document.createElement('div');d.className='tdot'+(i===tutStep?' on':'');dots.appendChild(d);});
+}
+function tutNext(){
+  if(tutStep<TUT_STEPS.length-1){tutStep++;tutRender();}else tutSkip();
+}
+function tutSkip(){
+  document.getElementById('tut').classList.remove('show');
+  if(st&&st.timerPending)startTimer();
+}
+
+tutRender();
+document.getElementById('tut').classList.add('show');
+load(1);</script>
 </body>
 </html>
