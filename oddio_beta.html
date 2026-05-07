@@ -6,7 +6,7 @@
 <title>Oddio — Think in Odds</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-body{background:#070D18;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,sans-serif}
+body{background:#070D18;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,sans-serif;overflow:hidden}
 #og{background:#0C1523;border-radius:16px;padding:14px;color:#EAF2FF;position:relative;display:inline-block;min-width:320px}
 #hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
 #logo{font-size:17px;font-weight:600;letter-spacing:3px}
@@ -1072,8 +1072,40 @@ function tutSkip(){
   if(st&&st.timerPending)startTimer();
 }
 
+/* ── Viewport fit ─────────────────────────────────────────────
+   Scales the game container to fill the viewport on mobile and
+   prevents vertical scrolling. The board is built with fixed
+   pixel sizes (~330×500); rather than rewriting every dimension
+   we apply a single transform to the outer container.
+
+   Mobile (vw < 700): scale UP to fill, capped at 1.8× to keep
+   touch targets sensible on tablets and foldables.
+   Desktop: only scale DOWN if the window is too small to
+   contain the natural-size board, never enlarge.
+
+   We listen to window.resize (NOT visualViewport.resize) so that
+   pinch-zoom on iOS isn't fought by our re-fit logic.           */
+function fitToViewport(){
+  const og=document.getElementById('og');if(!og)return;
+  // Reset before measuring so we read the natural size, not the scaled one
+  og.style.transform='';og.style.transformOrigin='';
+  const w=og.offsetWidth,h=og.offsetHeight;if(!w||!h)return;
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const margin=6;
+  const fit=Math.min((vw-margin*2)/w,(vh-margin*2)/h);
+  const isMobile=vw<700;
+  const scale=isMobile?Math.min(fit,1.8):Math.min(fit,1);
+  og.style.transform=`scale(${scale})`;
+  og.style.transformOrigin='center center';
+}
+let _fitTimer;
+window.addEventListener('resize',()=>{clearTimeout(_fitTimer);_fitTimer=setTimeout(fitToViewport,30);});
+window.addEventListener('orientationchange',()=>setTimeout(fitToViewport,200));
+
 tutRender();
 document.getElementById('tut').classList.add('show');
-load(1);</script>
+load(1);
+// Defer to next frame so the just-built board has settled into layout
+requestAnimationFrame(fitToViewport);</script>
 </body>
 </html>
