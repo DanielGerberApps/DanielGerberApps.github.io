@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Oddio — Think in Odds</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 body{background:#070D18;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,sans-serif}
 #og{background:#0C1523;border-radius:16px;padding:14px;color:#EAF2FF;position:relative;display:inline-block;min-width:320px}
 #hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
@@ -98,24 +98,51 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .bbt:active{transform:scale(.95)}
 .bbl{font-size:9px;color:rgba(234,242,255,.35);margin-top:1px}
 #mvcnt{font-size:24px;font-weight:500}
-/* Win overlay */
-#win{display:none;position:absolute;inset:0;background:rgba(7,13,22,.95);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:30}
+#game-area{position:relative;overflow:hidden;background:#0C1523;border-radius:14px}
+/* Win overlay — full coverage, game-area clips it to rounded shape */
+#win{display:none;position:absolute;inset:0;background:#070D18;flex-direction:column;align-items:center;justify-content:center;gap:0;z-index:30}
 #win.show{display:flex}
-#win h2{font-size:24px;font-weight:500;margin:0}
-#win p{font-size:12px;color:rgba(234,242,255,.45);text-align:center;line-height:1.6;margin:0}
-#win .mv{font-size:14px;color:#4DA3FF;font-weight:500}
-#nxt{background:#4DA3FF;color:#071018;border:none;border-radius:11px;padding:12px 28px;font-size:14px;font-weight:500;cursor:pointer;margin-top:2px}
+/* When real board is revealed, hide overlay entirely */
+#win.board-revealed{display:none}
+/* Slim banner shown instead when board is revealed */
+#win-banner{display:none;position:absolute;top:0;left:0;right:0;z-index:31;
+  background:rgba(7,13,24,.96);border-radius:0;
+  padding:7px 10px;flex-direction:column;align-items:center;gap:5px;
+  border-bottom:1px solid rgba(255,255,255,.07)}
+#win-banner.show{display:flex}
+#win-banner-title{font-size:12px;font-weight:600;color:#EAF2FF;letter-spacing:.5px}
+#win-banner-mv{font-size:11px;color:#4DA3FF;font-weight:500}
+#win-banner-btns{display:flex;gap:6px}
+#win-banner-btns button{border-radius:8px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;border:none}
+#hide-board-btn{background:rgba(255,255,255,.08);color:rgba(234,242,255,.55);border:1px solid rgba(255,255,255,.1) !important}
+#hide-board-btn:active{transform:scale(.96)}
+#banner-share-btn{background:rgba(76,217,100,.15);color:#4CD964;border:1px solid rgba(76,217,100,.4) !important}
+#banner-share-btn:active{transform:scale(.96)}
+#banner-nxt-btn{background:#4DA3FF;color:#071018}
+#banner-nxt-btn:active{transform:scale(.96)}
+/* Card wraps all win UI */
+#win-card{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 14px}
+#win-card h2{font-size:20px;font-weight:600;margin:0;letter-spacing:1px}
+#win-sub{font-size:10px;color:rgba(234,242,255,.4);text-align:center;line-height:1.5;margin:0}
+#win .mv{font-size:12px;color:#4DA3FF;font-weight:500}
+/* Mini board */
+#win-board{display:flex;flex-direction:column;gap:3px;margin:2px 0}
+#win-board .wb-row{display:flex;gap:3px}
+#toggle-board{background:rgba(255,255,255,.06);color:rgba(234,242,255,.45);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:5px 12px;font-size:11px;font-weight:500;cursor:pointer;letter-spacing:.3px}
+#toggle-board:active{transform:scale(.96)}
+.wb-cell{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.wb-cell.lk-e{background:rgba(77,163,255,.18);color:#4DA3FF;border:1.5px solid rgba(77,163,255,.45)}
+.wb-cell.lk-o{background:rgba(255,107,107,.18);color:#FF6B6B;border:1.5px solid rgba(255,107,107,.45)}
+.wb-cell.mut{background:rgba(76,217,100,.22);border:1.5px solid rgba(76,217,100,.55)}
+/* Win buttons row */
+#win-btns{display:flex;gap:7px;margin-top:2px}
+#nxt{background:#4DA3FF;color:#071018;border:none;border-radius:10px;padding:9px 18px;font-size:12px;font-weight:600;cursor:pointer}
 #nxt:active{transform:scale(.97)}
+#share-btn{background:rgba(76,217,100,.15);color:#4CD964;border:1px solid rgba(76,217,100,.4);border-radius:10px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer}
+#share-btn:active{transform:scale(.97)}
+#share-toast{font-size:10px;color:rgba(76,217,100,.7);height:11px;text-align:center;letter-spacing:.5px}
 
-/* ── Debug panel ─────────────────────────────────────────── */
-#dbg{margin-top:10px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;font-size:10px;color:rgba(234,242,255,.4)}
-#dbg-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-#dbg-badge{font-size:9px;font-weight:700;padding:3px 7px;border-radius:5px;letter-spacing:.5px}
-#dbg-badge.uniq{background:rgba(76,217,100,.15);color:#4CD964;border:1px solid rgba(76,217,100,.3)}
-#dbg-badge.multi{background:rgba(255,59,48,.15);color:#FF3B30;border:1px solid rgba(255,59,48,.3)}
-#dbg-sol{padding:5px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(234,242,255,.7);font-size:10px;cursor:pointer}
-#dbg-sol:active{transform:scale(.96)}
-#dbg-info{margin-top:6px;font-size:9px;color:rgba(234,242,255,.3);line-height:1.5}
+
 /* Solution overlay on tiles */
 .tile .sol-ov{
   position:absolute;inset:0;border-radius:9px;
@@ -142,13 +169,13 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
     <button class="dbt"    data-d="-1" onclick="newRandom()" style="margin-left:auto">↺ New</button>
   </div>
   <div id="msg">Tap a tile to flip its value</div>
+  <div id="game-area">
   <div id="board">
     <div id="colrow"></div>
     <div id="grow"><div id="rinds"></div><div id="grid"></div></div>
   </div>
   <div id="bot">
-    <button class="bbt" onclick="doUndo()"><span style="font-size:17px">↺</span><span class="bbl">Undo</span></button>
-    <div style="display:flex;flex-direction:column;align-items:center">
+<div style="display:flex;flex-direction:column;align-items:center">
       <div id="mvcnt">0</div>
       <div class="bbl" style="font-size:10px">Moves</div>
     </div>
@@ -157,28 +184,36 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
       <span class="bbl">Hint</span>
     </button>
   </div>
-  <!-- ── Debug panel ── -->
-  <div id="dbg">
-    <div id="dbg-row">
-      <span style="font-weight:600;color:rgba(234,242,255,.55)">🔧 Debug</span>
-      <span id="dbg-badge" class="uniq">UNIQUE</span>
-      <button id="dbg-sol" onclick="toggleSolution()">Show Solution</button>
-    </div>
-    <div id="dbg-info"></div>
-  </div>
 
   <div id="win">
-    <h2>Perfect!</h2>
-    <p>All rows, columns &amp; constraints<br>satisfy their parity.</p>
-    <div class="mv" id="winmv"></div>
-    <button id="nxt" onclick="nextLevel()">Next Level →</button>
+    <div id="win-card">
+      <h2>✓ Solved</h2>
+      <div id="win-sub">All rows, columns &amp; subgrids match their parity.</div>
+      <div class="mv" id="winmv"></div>
+      <div id="win-board"></div>
+      <div id="share-toast"></div>
+      <div id="win-btns">
+        <button id="toggle-board" onclick="toggleWinBoard()">Show Board 👁</button>
+        <button id="share-btn" onclick="shareWin()">Share 🔗</button>
+        <button id="nxt" onclick="nextLevel()">Next Level →</button>
+      </div>
+    </div>
+  </div>
+  <div id="win-banner">
+    <div id="win-banner-title">✓ Solved</div>
+    <div id="win-banner-mv"></div>
+    <div id="win-banner-btns">
+      <button id="hide-board-btn" onclick="toggleWinBoard()">Hide Board 👁</button>
+      <button id="banner-share-btn" onclick="shareWin()">Share 🔗</button>
+      <button id="banner-nxt-btn" onclick="nextLevel()">Next Level →</button>
+    </div>
+  </div>
   </div>
 </div>
 
 <script>
 'use strict';
 const N=5, TW=52, GAP=5, CELL=TW+GAP;
-const PAIR_COLS=['#A855F7','#F59E0B','#10B981','#F43F5E']; // purple, amber, emerald, rose
 let st, undos=[], lvl=1, hintCharges=3, diff=0;
 
 /* ── RNG ─────────────────────────────────────────────────── */
@@ -215,7 +250,7 @@ function gf2(A,b){
    1 unknown is forced ⇒ its value is fully determined.
    propagate() returns {solved, vals}.
    solved=true ⇒ every tile was deducible without guessing.   */
-function buildConstraintList(rp,cp,sgs,pairs){
+function buildConstraintList(rp,cp,sgs){
   const cs=[];
   for(let r=0;r<N;r++)
     cs.push({cells:Array.from({length:N},(_,c)=>r*N+c),tgt:rp[r]});
@@ -223,8 +258,6 @@ function buildConstraintList(rp,cp,sgs,pairs){
     cs.push({cells:Array.from({length:N},(_,r)=>r*N+c),tgt:cp[c]});
   for(const[sr,sc,tgt]of (sgs||[]))
     cs.push({cells:[[sr,sc],[sr,sc+1],[sr+1,sc],[sr+1,sc+1]].map(([r,c])=>r*N+c),tgt});
-  for(const[pa,pb,tgt]of (pairs||[]))
-    cs.push({cells:[pa,pb],tgt});
   return cs;
 }
 function propagate(startVals,locked,cs){
@@ -244,13 +277,12 @@ function propagate(startVals,locked,cs){
   return{solved:known.every(Boolean),vals};
 }
 
-/* ── Constraint builder ────────────────────────────────────────
-function buildC(vals,locked,rp,cp,sgs,pairs){
+/* ── Constraint builder ──────────────────────────────────────── */
+function buildC(vals,locked,rp,cp,sgs){
   const vm=[],vi=new Array(N*N).fill(-1);
   for(let r=0;r<N;r++)for(let c=0;c<N;c++)
     if(!locked[r*N+c]){vi[r*N+c]=vm.length;vm.push([r,c]);}
-  const allSgs=sgs||[],allPairs=pairs||[];
-  const n=vm.length,m=2*N+allSgs.length+allPairs.length;
+  const n=vm.length,m=2*N+(sgs?sgs.length:0);
   const A=Array.from({length:m},()=>new Array(n).fill(0)),b=new Array(m).fill(0);
   for(let r=0;r<N;r++){
     let s=0;
@@ -262,17 +294,12 @@ function buildC(vals,locked,rp,cp,sgs,pairs){
     for(let r=0;r<N;r++){const i=vi[r*N+c];if(i>=0)A[eq][i]=1;else s^=vals[r*N+c];}
     b[eq]=(cp[c]^s)&1;
   }
-  allSgs.forEach(([sr,sc,tgt],idx)=>{
+  if(sgs)sgs.forEach(([sr,sc,tgt],idx)=>{
     const eq=2*N+idx;let s=0;
     [[sr,sc],[sr,sc+1],[sr+1,sc],[sr+1,sc+1]].forEach(([r,c])=>{
       const i=vi[r*N+c];if(i>=0)A[eq][i]=1;else s^=vals[r*N+c];
     });
     b[eq]=(tgt^s)&1;
-  });
-  allPairs.forEach(([pa,pb,ptgt],idx)=>{
-    const eq=2*N+allSgs.length+idx;let s=0;
-    [pa,pb].forEach(k=>{const i=vi[k];if(i>=0)A[eq][i]=1;else s^=vals[k];});
-    b[eq]=(ptgt^s)&1;
   });
   return{A,b,vm};
 }
@@ -302,44 +329,15 @@ function pickSubgrids(rn,solVals,count){
   return chosen;
 }
 
-/* ── Pair picker ──────────────────────────────────────
-   Picks from currently-unlocked tiles so both cells are free.
-   Requires different row AND column for maximum topological
-   interest (pair cuts across existing row/col constraints).
-   Target = solVals[a] XOR solVals[b] — always satisfiable.   */
-function pickPairs(rn,solVals,locked,count){
-  if(count<=0)return[];
-  const avail=Array.from({length:N*N},(_,i)=>i).filter(i=>!locked[i]);
-  shuffle(avail,rn);
-  const pairs=[],used=new Set();
-  for(let i=0;i<avail.length&&pairs.length<count;i++){
-    const a=avail[i];if(used.has(a))continue;
-    const ra=Math.floor(a/N),ca=a%N;
-    // Find partner: different row+col, prefer max Manhattan distance
-    let bestB=-1,bestDist=-1;
-    for(let j=0;j<avail.length;j++){
-      if(j===i)continue;
-      const b=avail[j];if(used.has(b))continue;
-      const rb=Math.floor(b/N),cb=b%N;
-      if(ra===rb||ca===cb)continue; // same row or col — skip
-      const dist=Math.abs(ra-rb)+Math.abs(ca-cb);
-      if(dist>bestDist){bestDist=dist;bestB=b;}
-    }
-    if(bestB<0)continue;
-    pairs.push([a,bestB,solVals[a]^solVals[bestB]]);
-    used.add(a);used.add(bestB);
-  }
-  return pairs;
-}
 
 /* ── Difficulty ──────────────────────────────────────────── */
-// [lockRatio, sgCount, pairCount]
-// Higher tiers use more linked pairs, which create non-obvious cross-board
-// deductions — much harder to spot than row/col singletons.
+// [lockRatio, sgCount, minMoves]
+// Difficulty controls how many tiles are locked, how many subgrids, and
+// the minimum number of flips a puzzle requires from the starting state.
 const DIFF=[
-  [0.60, 0, 1],  // Easy   — ~60% locked; 0 subgrids, 1 pair
-  [0.32, 1, 1],  // Medium — ~32% locked; 1 subgrid, 1 pair
-  [0.04, 3, 1],  // Hard   — ~4% locked; 3 subgrids, 1 pair
+  [0.60, 0, 4],  // Easy   — ~60% locked, 0 subgrids, ≥4 moves
+  [0.32, 2, 4],  // Medium — ~32% locked, 2 subgrids, ≥4 moves
+  [0.04, 3, 8],  // Hard   — ~4% locked,  3 subgrids, ≥8 moves
                  //          Step 7 enforces propagation solvability.
 ];
 
@@ -385,7 +383,7 @@ const DIFF=[
    No outer retry loop. No move-count filter. No fallback.      */
 function generate(seed,_attempt=0){
   const rn=mkRng(seed!=null?seed:(Math.random()*1e9)|0);
-  const[lockRatio,sgCount,pairCount]=DIFF[diff];
+  const[lockRatio,sgCount,MIN_MOVES]=DIFF[diff];
 
   /* Step 1: Globally-valid binary solution by construction.
      Pick 24 bits freely. Set cell [4][4] so that XOR of all
@@ -429,12 +427,6 @@ function generate(seed,_attempt=0){
     for(let k=0;k<toUnlock;k++)locked[lockedCells[k][0]*N+lockedCells[k][1]]=false;
   }
 
-  /* Step 4c: Pick linked pairs from currently-unlocked tiles.
-     Done after Step 4b so both cells in every pair are guaranteed
-     to be free. pickPairs requires different row AND column per
-     pair, maximising topological cross-board interest.          */
-  const pairs=pickPairs(rn,solVals,locked,pairCount);
-
   /* Step 5: Scramble — unlocked tiles are randomly assigned.
      ~50% start correct, ~50% start wrong, so the solution is
      a non-trivial mix of flips rather than "tap everything once".
@@ -474,10 +466,9 @@ function generate(seed,_attempt=0){
      fewest free tiles (⇒2), then lock whichever of its free
      tiles appears earliest in lockOrder. This greedily minimises
      extra locks while immediately creating a forced tile.         */
-  const cs=buildConstraintList(rp,cp,sgs,pairs);
+  const cs=buildConstraintList(rp,cp,sgs);
   const lockPos=new Array(N*N);
   lockOrder.forEach((idx,pos)=>lockPos[idx]=pos);
-  const MIN_MOVES=4; // every puzzle requires at least this many flips
 
   /* HARD RULES (no fallback, no exception):
        (a) every subgrid retains >=2 unlocked tiles
@@ -549,14 +540,14 @@ function generate(seed,_attempt=0){
      If Step 7's hard guards prevented full propagation solvability
      OR Step 8 couldn't reach MIN_MOVES wrong tiles for this RNG
      draw, retry with a perturbed seed. Capped at 50 attempts.   */
-  const finalCs=buildConstraintList(rp,cp,sgs,pairs);
+  const finalCs=buildConstraintList(rp,cp,sgs);
   const propOK=propagate(startVals,locked,finalCs).solved;
   const finalWrong=startVals.reduce((s,v,i)=>s+(!locked[i]&&v!==solVals[i]?1:0),0);
   if(!propOK||finalWrong<MIN_MOVES){
     if(_attempt<50)return generate(seed!=null?seed+1:null,_attempt+1);
     console.warn('generate: retry cap reached, returning best effort');
   }
-  return{vals:startVals,solVals,locked,rp,cp,sgs,pairs};
+  return{vals:startVals,solVals,locked,rp,cp,sgs};
 }
 
 /* ── State ───────────────────────────────────────────────── */
@@ -566,7 +557,7 @@ function initSt(p){
     vals:[...p.vals],
     startVals:[...p.vals],           // snapshot of starting state for debug re-verify
     solVals:p.solVals||[...p.vals],  // the unique solution for debug overlay
-    locked:[...p.locked],rp:p.rp,cp:p.cp,sgs:p.sgs||[],pairs:p.pairs||[],
+    locked:[...p.locked],rp:p.rp,cp:p.cp,sgs:p.sgs||[],
     moves:0,solved:false
   };
   undos=[];hintCharges=3;
@@ -576,12 +567,7 @@ function initSt(p){
 const rowOk=r=>{let s=0;for(let c=0;c<N;c++)s+=st.vals[r*N+c];return(s%2)===st.rp[r];};
 const colOk=c=>{let s=0;for(let r=0;r<N;r++)s+=st.vals[r*N+c];return(s%2)===st.cp[c];};
 const sgOk=sg=>sgSat(sg,st.vals);
-const pairOk=([a,b,tgt])=>(st.vals[a]^st.vals[b])===tgt;
-const allDone=()=>{
-  for(let i=0;i<N;i++)if(!rowOk(i)||!colOk(i))return false;
-  if(!st.sgs.every(sgOk))return false;
-  return st.pairs.every(pairOk);
-};
+const allDone=()=>{for(let i=0;i<N;i++)if(!rowOk(i)||!colOk(i))return false;return st.sgs.every(sgOk);};
 
 function clearHint(el){
   if(!el)return;
@@ -675,24 +661,11 @@ function refresh(){
     if(lbl){lbl.style.color=col;lbl.style.borderColor=col;lbl.style.opacity=ok?'1':'.7';lbl.style.boxShadow=ok?`0 0 6px ${isE?'rgba(77,163,255,.4)':'rgba(255,107,107,.4)'}`:'none';}
     ov.style.filter=ok?`drop-shadow(0 0 3px ${isE?'rgba(77,163,255,.35)':'rgba(255,107,107,.35)'})`:'none';
   });
-  // Pairs
-  st.pairs.forEach((pair,idx)=>{
-    const ok=pairOk(pair);
-    const path=document.getElementById(`pair-path-${idx}`);
-    const circ=document.getElementById(`pair-circ-${idx}`);
-    const txt=document.getElementById(`pair-txt-${idx}`);
-    if(path){path.setAttribute('opacity',ok?'0.9':'0.4');path.setAttribute('stroke-width',ok?'2.5':'2');}
-    if(circ)circ.setAttribute('opacity',ok?'1':'0.55');
-    if(txt)txt.setAttribute('opacity',ok?'1':'0.55');
-  });
   const badRC=Array.from({length:N}).reduce((s,_,i)=>s+(!rowOk(i)?1:0)+(!colOk(i)?1:0),0);
   const badSG=st.sgs.filter(sg=>!sgOk(sg)).length;
-  const badPair=st.pairs.filter(p=>!pairOk(p)).length;
-  const tot=badRC+badSG+badPair;
+  const tot=badRC+badSG;
   document.getElementById('msg').textContent=
-    tot===0?'':[badRC?`${badRC} row/col`:'',badSG?`${badSG} bracket`:'',
-      badPair?`${badPair} link`:''].filter(Boolean).join(' · ')+
-      ` constraint${tot!==1?'s':''} remaining`;
+    tot===0?'':`${badRC?badRC+' row/col':''}${badRC&&badSG?' · ':''}${badSG?badSG+' bracket':''} constraint${tot!==1?'s':''} remaining`;
 }
 
 /* ── Win ─────────────────────────────────────────────────── */
@@ -707,8 +680,73 @@ function doWin(){
   });
   setTimeout(()=>{
     document.getElementById('winmv').textContent=`Solved in ${st.moves} move${st.moves!==1?'s':''}`;
+    buildWinBoard();
     document.getElementById('win').classList.add('show');
   },N*N*30+260);
+}
+
+/* ── Win board preview ───────────────────────────────────── */
+function buildWinBoard(){
+  const wb=document.getElementById('win-board');wb.innerHTML='';
+  for(let r=0;r<N;r++){
+    const row=document.createElement('div');row.className='wb-row';
+    for(let c=0;c<N;c++){
+      const i=r*N+c;
+      const cell=document.createElement('div');
+      if(st.locked[i]){
+        cell.className='wb-cell '+(st.vals[i]===0?'lk-e':'lk-o');
+        cell.textContent=st.vals[i];
+      } else {
+        cell.className='wb-cell mut';
+        // no number — green square hides the answer
+      }
+      row.appendChild(cell);
+    }
+    wb.appendChild(row);
+  }
+}
+
+/* ── Toggle win board visibility ─────────────────────────── */
+function toggleWinBoard(){
+  const win=document.getElementById('win');
+  const banner=document.getElementById('win-banner');
+  const revealing=!win.classList.contains('board-revealed');
+  win.classList.toggle('board-revealed',revealing);
+  banner.classList.toggle('show',revealing);
+  if(revealing){
+    document.getElementById('win-banner-mv').textContent=
+      document.getElementById('winmv').textContent;
+  }
+}
+function shareWin(){
+  const diffNames=['Easy','Medium','Hard'];
+  const minMoves=st.locked.reduce((s,lk,i)=>s+(!lk&&st.startVals[i]!==st.solVals[i]?1:0),0);
+  let grid='';
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const i=r*N+c;
+      if(st.locked[i]) grid+=st.vals[i]===0?'🟦':'🟥';
+      else grid+='🟩';
+    }
+    grid+='\n';
+  }
+  const text=`ODDIO — Level ${lvl} (${diffNames[diff]})\nSolved in ${st.moves} move${st.moves!==1?'s':''} 🎯  (min: ${minMoves})\n\n${grid}\nhttps://oddio.game`;
+  const toast=document.getElementById('share-toast');
+  const btn=document.getElementById('share-btn');
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='Copied ✓';
+    toast.textContent='COPIED TO CLIPBOARD';
+    setTimeout(()=>{btn.textContent='Share 🔗';toast.textContent='';},2000);
+  }).catch(()=>{
+    // fallback: select from textarea
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    btn.textContent='Copied ✓';
+    toast.textContent='COPIED TO CLIPBOARD';
+    setTimeout(()=>{btn.textContent='Share 🔗';toast.textContent='';},2000);
+  });
 }
 
 /* ── Build board ─────────────────────────────────────────── */
@@ -746,51 +784,10 @@ function build(){
     lbl.style.color=idleCol;lbl.style.borderColor=idleCol;lbl.style.opacity='.7';
     ov.appendChild(lbl);gr.appendChild(ov);
   });
-  // ── Pair SVG overlay ──────────────────────────────────────────
-  const cellCenter=i=>{const r=Math.floor(i/N),col=i%N;return[col*CELL+TW/2,r*CELL+TW/2];};
-  if(st.pairs.length){
-    const gsz=N*CELL-GAP;
-    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.setAttribute('width',gsz);svg.setAttribute('height',gsz);
-    svg.style.cssText='position:absolute;top:0;left:0;pointer-events:none;z-index:4;overflow:visible';
-    st.pairs.forEach(([a,b,tgt],idx)=>{
-      const col=PAIR_COLS[idx%PAIR_COLS.length];
-      const[x1,y1]=cellCenter(a),[x2,y2]=cellCenter(b);
-      const mx=(x1+x2)/2,my=(y1+y2)/2;
-      const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy)||1;
-      // Curve alternates left/right so multiple pairs don't overlap
-      const off=30*(idx%2===0?1:-1);
-      const cx=mx+(-dy/len)*off,cy=my+(dx/len)*off;
-      // Quadratic bezier midpoint at t=0.5
-      const bx=0.25*x1+0.5*cx+0.25*x2,by=0.25*y1+0.5*cy+0.25*y2;
-      // Arc
-      const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-      path.setAttribute('d',`M${x1},${y1} Q${cx},${cy} ${x2},${y2}`);
-      path.setAttribute('stroke',col);path.setAttribute('stroke-width','2');
-      path.setAttribute('fill','none');path.setAttribute('opacity','0.4');
-      path.setAttribute('stroke-dasharray','5,3');
-      path.id=`pair-path-${idx}`;svg.appendChild(path);
-      // Badge background
-      const circ=document.createElementNS('http://www.w3.org/2000/svg','circle');
-      circ.setAttribute('cx',bx);circ.setAttribute('cy',by);circ.setAttribute('r','10');
-      circ.setAttribute('fill','#0C1523');circ.setAttribute('stroke',col);
-      circ.setAttribute('stroke-width','1.5');circ.setAttribute('opacity','0.55');
-      circ.id=`pair-circ-${idx}`;svg.appendChild(circ);
-      // Badge label
-      const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
-      txt.setAttribute('x',bx);txt.setAttribute('y',by);
-      txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','central');
-      txt.setAttribute('fill',col);txt.setAttribute('font-size','10');
-      txt.setAttribute('font-weight','700');
-      txt.setAttribute('font-family','system-ui,sans-serif');
-      txt.textContent=tgt===0?'=':'≠';
-      txt.setAttribute('opacity','0.55');
-      txt.id=`pair-txt-${idx}`;svg.appendChild(txt);
-    });
-    gr.appendChild(svg);
-  }
   document.getElementById('mvcnt').textContent=0;
-  document.getElementById('win').classList.remove('show');
+  document.getElementById('win').classList.remove('show','board-revealed');
+  document.getElementById('win-banner').classList.remove('show');
+  document.getElementById('toggle-board').textContent='Show Board 👁';
   refresh();
   document.getElementById('msg').textContent='Tap a tile to flip its value';
 }
@@ -801,7 +798,6 @@ function load(l,seed){
   document.getElementById('lvllbl').textContent=`Level ${l}`;
   initSt(generate(seed!=null?seed:l*997+42));
   build();
-  updateDebug();
 }
 function nextLevel(){load(lvl+1);}
 function newRandom(){load(lvl,(Math.random()*1e9)|0);}
@@ -820,10 +816,10 @@ function setDiff(d){diff=d;document.querySelectorAll('.dbt').forEach(b=>b.classL
 
 function updateDebug(){
   // Re-verify uniqueness from the puzzle's actual start state
-  const{A,b,vm}=buildC(st.startVals,st.locked,st.rp,st.cp,st.sgs,st.pairs);
+  const{A,b,vm}=buildC(st.startVals,st.locked,st.rp,st.cp,st.sgs);
   const res=vm.length>0?gf2(A,b):{ok:true,uniq:true,sol:[]};
   const isUniq=res.ok&&res.uniq;
-  // Min moves = tiles whose start value differs from solution (not sum of sol)
+  // Min moves = tiles whose start value differs from solution
   const minMoves=st.locked.reduce((s,lk,i)=>s+(!lk&&st.startVals[i]!==st.solVals[i]?1:0),0);
   const badge=document.getElementById('dbg-badge');
   badge.textContent=isUniq?'UNIQUE SOLUTION':'⚠ MULTIPLE SOLUTIONS';
@@ -831,7 +827,7 @@ function updateDebug(){
   const unlocked=st.locked.filter(v=>!v).length;
   document.getElementById('dbg-info').textContent=
     `Unlocked: ${unlocked} tiles  ·  Min moves from start: ${minMoves}  ·  `+
-    `Subgrids: ${st.sgs.length}  ·  Pairs: ${st.pairs.length}  ·  `+
+    `Subgrids: ${st.sgs.length}  ·  `+
     `GF(2): ${res.ok?(isUniq?'unique ✓':'multiple'):'no solution ✗'}`;
 }
 
