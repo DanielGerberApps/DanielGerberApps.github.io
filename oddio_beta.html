@@ -8,13 +8,13 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 body{background:#070D18;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,sans-serif;overflow:hidden}
 #og{background:#0C1523;border-radius:16px;padding:14px;color:#EAF2FF;position:relative;display:inline-block;min-width:320px}
-#hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+#hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 #logo{font-size:17px;font-weight:600;letter-spacing:3px}
 #tagline{font-size:9px;color:rgba(234,242,255,.3);margin-top:2px;letter-spacing:1.5px}
-#lvllbl{font-size:12px;color:rgba(234,242,255,.4);padding-top:3px}
-#diffs{display:flex;gap:5px;margin-bottom:8px}
-.dbt{padding:5px 11px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(234,242,255,.4);font-size:11px;cursor:pointer;transition:all .15s}
-.dbt.on{background:rgba(77,163,255,.15);border-color:rgba(77,163,255,.55);color:#4DA3FF}
+#hdr-right{display:flex;align-items:center;gap:10px}
+#lvllbl{font-size:12px;color:rgba(234,242,255,.4)}
+.dbt{padding:5px 11px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(234,242,255,.55);font-size:11px;cursor:pointer;transition:all .15s}
+.dbt:hover{color:rgba(234,242,255,.9);border-color:rgba(255,255,255,.2)}
 #msg{height:15px;text-align:center;font-size:10px;color:rgba(234,242,255,.3);margin-bottom:8px}
 #board{display:inline-flex;flex-direction:column;gap:5px}
 #colrow{display:flex;gap:5px;padding-left:27px}
@@ -99,7 +99,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .bbl{font-size:9px;color:rgba(234,242,255,.35);margin-top:1px}
 #mvcnt{font-size:24px;font-weight:500}
 #tmcnt{font-size:20px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.3px;color:#EAF2FF}
-#game-area{position:relative;overflow:hidden;background:#0C1523;border-radius:14px}
+#game-area{position:relative;overflow:hidden;background:#0C1523;border-radius:14px;padding:8px}
 /* Win overlay — full coverage, game-area clips it to rounded shape */
 #win{display:none;position:absolute;inset:0;background:#070D18;flex-direction:column;align-items:center;justify-content:center;gap:0;z-index:30}
 #win.show{display:flex}
@@ -129,13 +129,31 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 #win-par{font-size:11px;color:rgba(234,242,255,.5);font-weight:500;letter-spacing:.2px;margin-top:-3px}
 /* Mini board */
 #win-board{display:flex;flex-direction:column;gap:3px;margin:2px 0}
-#win-board .wb-row{display:flex;gap:3px}
+.wb-col-header{display:flex;gap:3px;padding-left:16px}  /* 13(rinds) + 3(gap) */
+.wb-body{display:flex;gap:3px;align-items:flex-start}
+.wb-rinds{display:flex;flex-direction:column;gap:3px}
+.wb-grid{display:grid;grid-template-columns:repeat(5,34px);gap:3px;position:relative}
+.wb-ci,.wb-ri{display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;border-radius:6px}
+.wb-ci{width:34px;height:13px}
+.wb-ri{width:13px;height:34px}
+.wb-ci.e,.wb-ri.e{background:rgba(77,163,255,.28);color:#4DA3FF}
+.wb-ci.o,.wb-ri.o{background:rgba(255,107,107,.28);color:#FF6B6B}
 #toggle-board{background:rgba(255,255,255,.06);color:rgba(234,242,255,.45);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:5px 12px;font-size:11px;font-weight:500;cursor:pointer;letter-spacing:.3px}
 #toggle-board:active{transform:scale(.96)}
 .wb-cell{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
 .wb-cell.lk-e{background:rgba(77,163,255,.18);color:#4DA3FF;border:1.5px solid rgba(77,163,255,.45)}
 .wb-cell.lk-o{background:rgba(255,107,107,.18);color:#FF6B6B;border:1.5px solid rgba(255,107,107,.45)}
 .wb-cell.mut{background:rgba(76,217,100,.22);border:1.5px solid rgba(76,217,100,.55)}
+/* Bracket overlays on win-board — scaled-down .sgov */
+.wb-sgov{position:absolute;pointer-events:none}
+.wb-sgc{position:absolute;width:9px;height:9px}
+.wb-sgov .tl{top:0;left:0;border-top:1.5px solid;border-left:1.5px solid;border-radius:3px 0 0 0}
+.wb-sgov .tr{top:0;right:0;border-top:1.5px solid;border-right:1.5px solid;border-radius:0 3px 0 0}
+.wb-sgov .bl{bottom:0;left:0;border-bottom:1.5px solid;border-left:1.5px solid;border-radius:0 0 0 3px}
+.wb-sgov .br{bottom:0;right:0;border-bottom:1.5px solid;border-right:1.5px solid;border-radius:0 0 3px 0}
+.wb-sglbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:8px;font-weight:700;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid;background:#070D18}
+.wb-sgov.e .wb-sgc,.wb-sgov.e .wb-sglbl{border-color:#4DA3FF;color:#4DA3FF}
+.wb-sgov.o .wb-sgc,.wb-sgov.o .wb-sglbl{border-color:#FF6B6B;color:#FF6B6B}
 /* Win buttons row */
 #win-btns{display:flex;gap:7px;margin-top:2px}
 #nxt{background:#4DA3FF;color:#071018;border:none;border-radius:10px;padding:9px 18px;font-size:12px;font-weight:600;cursor:pointer}
@@ -193,13 +211,10 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 <div id="og">
   <div id="hdr">
     <div><div id="logo">ODDIO</div><div id="tagline">THINK IN ODDS</div></div>
-    <div id="lvllbl">Level 1</div>
-  </div>
-  <div id="diffs">
-    <button class="dbt on" data-d="0" onclick="setDiff(0)">Easy</button>
-    <button class="dbt"    data-d="1" onclick="setDiff(1)">Medium</button>
-    <button class="dbt"    data-d="2" onclick="setDiff(2)">Hard</button>
-    <button class="dbt"    data-d="-1" onclick="newRandom()" style="margin-left:auto">↺ New</button>
+    <div id="hdr-right">
+      <div id="lvllbl">Level 1</div>
+      <button class="dbt" onclick="newRandom()">↺ New</button>
+    </div>
   </div>
   <div id="msg">Tap a tile to flip its value</div>
   <div id="game-area">
@@ -268,7 +283,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 <script>
 'use strict';
 const N=5, TW=52, GAP=5, CELL=TW+GAP;
-let st, undos=[], lvl=1, hintCharges=3, diff=0;
+let st, undos=[], lvl=1, hintCharges=3;
 
 /* ── RNG ─────────────────────────────────────────────────── */
 function mkRng(seed){
@@ -437,7 +452,7 @@ const DIFF=[
    No outer retry loop. No move-count filter. No fallback.      */
 function generate(seed,_attempt=0){
   const rn=mkRng(seed!=null?seed:(Math.random()*1e9)|0);
-  const[lockRatio,sgCount,MIN_MOVES]=DIFF[diff];
+  const[lockRatio,sgCount,MIN_MOVES]=DIFF[2];  // always Hard
 
   /* Step 1: Globally-valid binary solution by construction.
      Pick 24 bits freely. Set cell [4][4] so that XOR of all
@@ -805,22 +820,56 @@ function doWin(){
 /* ── Win board preview ───────────────────────────────────── */
 function buildWinBoard(){
   const wb=document.getElementById('win-board');wb.innerHTML='';
-  for(let r=0;r<N;r++){
-    const row=document.createElement('div');row.className='wb-row';
-    for(let c=0;c<N;c++){
-      const i=r*N+c;
-      const cell=document.createElement('div');
-      if(st.locked[i]){
-        cell.className='wb-cell '+(st.vals[i]===0?'lk-e':'lk-o');
-        cell.textContent=st.vals[i];
-      } else {
-        cell.className='wb-cell mut';
-        // no number — green square hides the answer
-      }
-      row.appendChild(cell);
-    }
-    wb.appendChild(row);
+  // Column-indicator header (5 indicators, offset to align with grid columns)
+  const colHdr=document.createElement('div');colHdr.className='wb-col-header';
+  for(let c=0;c<N;c++){
+    const ci=document.createElement('div');
+    ci.className='wb-ci '+(st.cp[c]?'o':'e');
+    ci.textContent=st.cp[c]?'O':'E';
+    colHdr.appendChild(ci);
   }
+  wb.appendChild(colHdr);
+  // Body: row-indicator column + grid (with bracket overlays)
+  const body=document.createElement('div');body.className='wb-body';
+  const rinds=document.createElement('div');rinds.className='wb-rinds';
+  for(let r=0;r<N;r++){
+    const ri=document.createElement('div');
+    ri.className='wb-ri '+(st.rp[r]?'o':'e');
+    ri.textContent=st.rp[r]?'O':'E';
+    rinds.appendChild(ri);
+  }
+  body.appendChild(rinds);
+  const grid=document.createElement('div');grid.className='wb-grid';
+  for(let i=0;i<N*N;i++){
+    const cell=document.createElement('div');
+    if(st.locked[i]){
+      cell.className='wb-cell '+(st.vals[i]===0?'lk-e':'lk-o');
+      cell.textContent=st.vals[i];
+    } else {
+      cell.className='wb-cell mut';
+      // no number — green square hides the answer
+    }
+    grid.appendChild(cell);
+  }
+  // Bracket overlays — same positioning math as live .sgov, scaled
+  const WB_TW=34,WB_GAP=3,WB_CELL=WB_TW+WB_GAP,pad=3;
+  st.sgs.forEach(sg=>{
+    const[sr,sc,tgt]=sg,isE=tgt===0;
+    const ov=document.createElement('div');
+    ov.className='wb-sgov '+(isE?'e':'o');
+    ov.style.left=`${sc*WB_CELL-pad}px`;
+    ov.style.top=`${sr*WB_CELL-pad}px`;
+    const sz=WB_TW*2+WB_GAP+pad*2;
+    ov.style.width=sz+'px';ov.style.height=sz+'px';
+    ['tl','tr','bl','br'].forEach(cls=>{
+      const c=document.createElement('div');c.className='wb-sgc '+cls;ov.appendChild(c);
+    });
+    const lbl=document.createElement('div');lbl.className='wb-sglbl';lbl.textContent=isE?'E':'O';
+    ov.appendChild(lbl);
+    grid.appendChild(ov);
+  });
+  body.appendChild(grid);
+  wb.appendChild(body);
 }
 
 /* ── Toggle win board visibility ─────────────────────────── */
@@ -836,7 +885,6 @@ function toggleWinBoard(){
   }
 }
 function shareWin(){
-  const diffNames=['Easy','Medium','Hard'];
   const minMoves=st.minMoves;
   let grid='';
   for(let r=0;r<N;r++){
@@ -847,7 +895,7 @@ function shareWin(){
     }
     grid+='\n';
   }
-  const text=`ODDIO — Level ${lvl} (${diffNames[diff]})\nSolved in ${st.moves} move${st.moves!==1?'s':''} 🎯  (fewest possible: ${minMoves})\n⏱️ ${fmtTime(st.solveTime)}\n\n${grid}\nhttps://oddio.game`;
+  const text=`ODDIO — Level ${lvl}\nSolved in ${st.moves} move${st.moves!==1?'s':''} 🎯  (fewest possible: ${minMoves})\n⏱️ ${fmtTime(st.solveTime)}\n\n${grid}\nhttps://oddio.game`;
   const toast=document.getElementById('share-toast');
   const btn=document.getElementById('share-btn');
   navigator.clipboard.writeText(text).then(()=>{
@@ -919,7 +967,6 @@ function load(l,seed){
 }
 function nextLevel(){load(lvl+1);}
 function newRandom(){load(lvl,(Math.random()*1e9)|0);}
-function setDiff(d){diff=d;document.querySelectorAll('.dbt').forEach(b=>b.classList.toggle('on',+b.dataset.d===d));load(1);}
 
 /* ── Debug ───────────────────────────────────────────────────
    Uniqueness is enforced by the generator (resF.uniq check),
@@ -1031,7 +1078,7 @@ const TUT_STEPS=[
   },
   {
     title:'Brackets & hints',
-    desc:'Harder levels add <strong style="color:#EAF2FF">brackets</strong> — small 2×2 squares with their own E or O goal. Stuck? Tap 💡 for a hint (you get 3).',
+    desc:'Every puzzle includes <strong style="color:#EAF2FF">brackets</strong> — small 2×2 zones with their own E or O goal. Stuck? Tap 💡 for a hint (you get 3).',
     visual:`<div style="display:flex;align-items:center;gap:24px">
       <div style="position:relative;padding:8px">
         <div style="display:grid;grid-template-columns:repeat(2,40px);gap:4px">
