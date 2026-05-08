@@ -153,6 +153,17 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 #share-btn{background:rgba(76,217,100,.15);color:#4CD964;border:1px solid rgba(76,217,100,.4);border-radius:10px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer}
 #share-btn:active{transform:scale(.97)}
 #share-toast{font-size:10px;color:rgba(76,217,100,.7);height:11px;text-align:center;letter-spacing:.5px}
+/* ── Daily puzzle UI on win screen ───────────────────────────
+   Streak block uses the same warm hint-yellow as the in-game
+   hint colour for visual continuity. Stats line uses the muted
+   "secondary text" tone shared with #win-par and #win-sub.
+   Countdown sits below the action buttons in tabular-nums so
+   the digits don't shimmer as they tick.                      */
+#win-streak{font-size:13px;color:#FFD60A;text-align:center;letter-spacing:.3px;margin-top:4px;font-weight:500}
+#win-streak strong{font-weight:700;color:#FFD60A}
+#win-streak.empty{color:rgba(234,242,255,.4);font-weight:400}
+#win-stats{font-size:11px;color:rgba(234,242,255,.5);text-align:center;letter-spacing:.4px;margin-top:-2px}
+#win-countdown{font-size:11px;color:rgba(234,242,255,.55);text-align:center;letter-spacing:.5px;margin-top:8px;font-variant-numeric:tabular-nums}
 
 
 /* ── Tutorial overlay ────────────────────────────────────── */
@@ -204,7 +215,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
   <div id="hdr">
     <div><div id="logo"><span class="dot-o blue-dot">O</span>DDI<span class="dot-o orange-dot">O</span></div><div id="tagline">Oddly Addicting</div></div>
     <div id="hdr-right">
-      <div id="lvllbl">Level 1</div>
+      <div id="lvllbl">Loading…</div>
       <button class="dbt" onclick="tutStep=0; tutRender(); document.getElementById('tut').classList.add('show');">❓ Help</button>
     </div>
   </div>
@@ -236,12 +247,14 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
       <div class="mv" id="winmv"></div>
       <div id="win-par"></div>
       <div id="win-board"></div>
+      <div id="win-streak"></div>
+      <div id="win-stats"></div>
       <div id="share-toast"></div>
       <div id="win-btns">
         <button id="toggle-board" onclick="toggleWinBoard()">Show Board 👁</button>
         <button id="share-btn" onclick="shareWin()">Share 🔗</button>
-        <button id="nxt" onclick="nextLevel()">Next Level →</button>
       </div>
+      <div id="win-countdown">Next puzzle in —</div>
     </div>
   </div>
   <div id="win-banner">
@@ -250,7 +263,6 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
     <div id="win-banner-btns">
       <button id="hide-board-btn" onclick="toggleWinBoard()">Hide Board 👁</button>
       <button id="banner-share-btn" onclick="shareWin()">Share 🔗</button>
-      <button id="banner-nxt-btn" onclick="nextLevel()">Next Level →</button>
     </div>
   </div>
   </div>
@@ -275,7 +287,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 <script>
 'use strict';
 const N=5, TW=52, GAP=7, CELL=TW+GAP;
-let st, undos=[], lvl=1, hintCharges=3;
+let st, undos=[], puzzleNum=1, hintCharges=3;
 
 /* ── RNG ─────────────────────────────────────────────────── */
 function mkRng(seed){
@@ -856,6 +868,18 @@ function doWin(){
   // the (unique) solution. Each such tile must flip at least once, and
   // since the solution is unique, this lower bound is exact.
   st.minMoves=st.locked.reduce((s,lk,i)=>s+(!lk&&st.startVals[i]!==st.solVals[i]?1:0),0);
+  /* Persist this solve to localStorage BEFORE the win UI populates,
+     so a reload mid-celebration still restores cleanly. We also
+     update the streak object here (recordSolve is idempotent for
+     the same date — replays in the same day don't double-count).  */
+  saveDailyRec({
+    date:todayKey(),puzzleNum:puzzleNum,solved:true,
+    moves:st.moves,timeMs:st.solveTime,hintsUsed:3-hintCharges,minMoves:st.minMoves,
+    vals:[...st.vals],startVals:[...st.startVals],solVals:[...st.solVals],
+    locked:[...st.locked],rp:[...st.rp],cp:[...st.cp],
+    sgs:st.sgs.map(sg=>[...sg])
+  });
+  recordSolve();
   document.querySelectorAll('.tile').forEach((el,i)=>{
     setTimeout(()=>{
       el.style.transition='transform .14s,border-color .22s';
@@ -863,17 +887,7 @@ function doWin(){
       setTimeout(()=>el.style.transform='scale(1)',160);
     },i*30);
   });
-  setTimeout(()=>{
-    document.getElementById('winmv').textContent=`Solved in ${st.moves} move${st.moves!==1?'s':''} · ${fmtTime(st.solveTime)}`;
-    // Comparison line — kept on its own row to avoid colliding visually with
-    // the timer (where "min" could be misread as the minutes abbreviation).
-    const par=document.getElementById('win-par');
-    par.textContent=st.moves===st.minMoves
-      ?`Solved in the fewest possible moves`
-      :`Fewest possible: ${st.minMoves} move${st.minMoves!==1?'s':''}`;
-    buildWinBoard();
-    document.getElementById('win').classList.add('show');
-  },N*N*30+260);
+  setTimeout(showWinUI,N*N*30+260);
 }
 
 /* ── Win board preview ───────────────────────────────────── */
@@ -951,7 +965,14 @@ function shareWin(){
     }
     grid+='\n';
   }
-  const text=`ODDIO — Level ${lvl}\nSolved in ${st.moves} move${st.moves!==1?'s':''} 🎯  (fewest possible: ${minMoves})\n⏱️ ${fmtTime(st.solveTime)}\n\n${grid}\nhttps://oddio.game`;
+  /* Wordle-style daily share: puzzle number + date so receivers
+     instantly know which puzzle is being talked about. Streak
+     line is included only when current >0 to avoid the noisy
+     "🔥 0 day streak" on a first solve.                       */
+  const s=loadStreak();
+  const streakLine=s.current>0?`🔥 ${s.current} day streak\n`:'';
+  const perfMark=st.moves===minMoves?' 🎯':'';
+  const text=`Oddio #${puzzleNum} · ${shortDate()}\n${st.moves} move${st.moves!==1?'s':''}${perfMark} (fewest: ${minMoves}) · ⏱️ ${fmtTime(st.solveTime)}\n${streakLine}\n${grid}\nhttps://oddio.game`;
   const toast=document.getElementById('share-toast');
   const btn=document.getElementById('share-btn');
   navigator.clipboard.writeText(text).then(()=>{
@@ -1014,15 +1035,201 @@ function build(){
   startTimer();
 }
 
-/* ── Navigation ──────────────────────────────────────────── */
-function load(l,seed){
-  lvl=l;
-  document.getElementById('lvllbl').textContent=`Level ${l}`;
-  initSt(generate(seed!=null?seed:l*997+42));
-  build();
+/* ── Daily puzzle system ─────────────────────────────────────
+   One puzzle per day. Determined entirely by the player's local
+   calendar date — no server, no network. Same date math runs on
+   web, mobile, anywhere, so puzzle #N's content is identical for
+   every player on day N regardless of platform. (Local midnight
+   rollover, Wordle-style: at any wall-clock moment a Tokyo user
+   may already be on #N+1 while LA is still on #N, but the
+   *content* of #N matches between them.)
+
+   Storage:
+     oddio_daily   — last solve snapshot (board + stats), so a
+                     reload after solving restores the win view.
+     oddio_streak  — running streak + lifetime stats.
+   Both wrapped in try/catch: in private mode / disabled storage
+   the game still plays, just without persistence.
+
+   To port to Unity C#: replicate todayPuzzleNum() with
+   System.DateTime.Today, feed seed = num*997+42 into the same
+   GF(2) generator algorithm, and you get matching puzzles.
+   PlayerPrefs replaces localStorage with no behavioural change. */
+const EPOCH_Y=2026, EPOCH_M=4 /* May, 0-indexed */, EPOCH_D=8;  // puzzle #1 = launch day
+const DAILY_KEY='oddio_daily';
+const STREAK_KEY='oddio_streak';
+
+function todayKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-function nextLevel(){load(lvl+1);}
-function newRandom(){load(lvl,(Math.random()*1e9)|0);}
+function todayPuzzleNum(){
+  const e=new Date(EPOCH_Y,EPOCH_M,EPOCH_D);e.setHours(0,0,0,0);
+  const t=new Date();t.setHours(0,0,0,0);
+  // DST-safe: subtracting two midnights and dividing by ms/day
+  // can give 23.0 or 25.0 on transition days. Math.round absorbs
+  // both. Floor would mis-bin DST-spring as the prior day.
+  return Math.max(1,Math.round((t-e)/86400000)+1);
+}
+function shortDate(){
+  const d=new Date();
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[d.getMonth()]} ${d.getDate()}`;
+}
+function msUntilTomorrow(){
+  const d=new Date();
+  const next=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,0,0,0,0);
+  return next-d;
+}
+function fmtCountdown(ms){
+  if(ms<0)ms=0;
+  const tot=Math.floor(ms/1000);
+  const h=Math.floor(tot/3600);
+  const m=Math.floor((tot%3600)/60);
+  const s=tot%60;
+  return h>0
+    ?`${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`
+    :`${m}m ${String(s).padStart(2,'0')}s`;
+}
+
+function loadDailyRec(){try{return JSON.parse(localStorage.getItem(DAILY_KEY)||'null');}catch(e){return null;}}
+function saveDailyRec(o){try{localStorage.setItem(DAILY_KEY,JSON.stringify(o));}catch(e){}}
+function loadStreak(){
+  const empty={current:0,max:0,lastSolvedDate:null,lastPlayedDate:null,played:0,solved:0};
+  try{return JSON.parse(localStorage.getItem(STREAK_KEY)||'null')||empty;}
+  catch(e){return empty;}
+}
+function saveStreak(s){try{localStorage.setItem(STREAK_KEY,JSON.stringify(s));}catch(e){}}
+
+function bumpPlayedIfNewDay(){
+  const s=loadStreak();const t=todayKey();
+  if(s.lastPlayedDate!==t){
+    s.played=(s.played||0)+1;
+    s.lastPlayedDate=t;
+    saveStreak(s);
+  }
+}
+function recordSolve(){
+  const s=loadStreak();const t=todayKey();
+  if(s.lastSolvedDate===t)return s;  // already counted today (replay/reload)
+  // Compute "yesterday" via Date arithmetic on the parsed today key —
+  // this handles month/year boundaries and DST without manual edge cases.
+  const[y,m,d]=t.split('-').map(Number);
+  const yest=new Date(y,m-1,d-1);
+  const yk=`${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,'0')}-${String(yest.getDate()).padStart(2,'0')}`;
+  s.current=(s.lastSolvedDate===yk)?(s.current||0)+1:1;
+  if(s.current>(s.max||0))s.max=s.current;
+  s.lastSolvedDate=t;
+  s.solved=(s.solved||0)+1;
+  saveStreak(s);
+  return s;
+}
+
+function updateHeaderLabel(){
+  document.getElementById('lvllbl').textContent=`#${puzzleNum} · ${shortDate()}`;
+}
+
+/* Populates the win overlay from the current st. Used both for
+   live solves (called from doWin after the celebration timeout)
+   and for restoring the win screen on reload after a previous
+   solve. Reads streak fresh each time so the displayed numbers
+   include any update recordSolve() just made.                  */
+function showWinUI(){
+  document.getElementById('winmv').textContent=
+    `Solved in ${st.moves} move${st.moves!==1?'s':''} · ${fmtTime(st.solveTime)}`;
+  const par=document.getElementById('win-par');
+  par.textContent=st.moves===st.minMoves
+    ?`Solved in the fewest possible moves`
+    :`Fewest possible: ${st.minMoves} move${st.minMoves!==1?'s':''}`;
+  buildWinBoard();
+  const s=loadStreak();
+  const streakEl=document.getElementById('win-streak');
+  if(s.current>0){
+    streakEl.classList.remove('empty');
+    streakEl.innerHTML=`🔥 <strong>${s.current}</strong> day streak · best <strong>${s.max}</strong>`;
+  } else {
+    streakEl.classList.add('empty');
+    streakEl.textContent="Solve tomorrow's puzzle to start a streak";
+  }
+  const winPct=s.played>0?Math.round(100*s.solved/s.played):0;
+  document.getElementById('win-stats').textContent=
+    `Solved ${s.solved}/${s.played} (${winPct}%)`;
+  document.getElementById('win').classList.add('show');
+}
+
+/* Single live countdown ticker — drives both the win-card
+   countdown text and (when the rollover hits) a page reload so
+   the new day's puzzle takes over without the user refreshing.
+   1-second tick is fine; sub-second precision isn't useful here. */
+let _countdownTimer=null;
+function startCountdown(){
+  if(_countdownTimer){clearInterval(_countdownTimer);_countdownTimer=null;}
+  const tick=()=>{
+    const ms=msUntilTomorrow();
+    const txt=`Next puzzle in ${fmtCountdown(ms)}`;
+    const el=document.getElementById('win-countdown');
+    if(el)el.textContent=txt;
+    if(ms<=1000){
+      // Roll over — pull in the new day's puzzle. A small delay
+      // lets the "0m 00s" tick render before the reload.
+      clearInterval(_countdownTimer);_countdownTimer=null;
+      setTimeout(()=>location.reload(),1100);
+    }
+  };
+  tick();
+  _countdownTimer=setInterval(tick,1000);
+}
+
+/* Main entry: pick today's puzzle, restore prior solve if any,
+   otherwise generate fresh. Replaces the old per-level load().  */
+function loadDaily(){
+  puzzleNum=todayPuzzleNum();
+  updateHeaderLabel();
+  bumpPlayedIfNewDay();
+  const rec=loadDailyRec();
+  const today=todayKey();
+  if(rec&&rec.date===today&&rec.solved){
+    /* Returning visitor on a day they've already solved.
+       Reconstitute st from the saved snapshot, render the
+       static board (so "Show Board" toggle has something to
+       reveal), then jump straight to the win UI.            */
+    initSt({vals:rec.vals,solVals:rec.solVals,locked:rec.locked,rp:rec.rp,cp:rec.cp,sgs:rec.sgs});
+    st.startVals=rec.startVals;
+    st.moves=rec.moves;
+    st.minMoves=rec.minMoves;
+    build();
+    /* IMPORTANT: build() calls startTimer() at the end, which
+       sets st.solveTime=null and st.startTime=now. We must
+       overwrite these AFTER build() returns, not before, or
+       the saved solve time gets clobbered. Same reason we
+       cancel the RAF here, not earlier — startTimer scheduled
+       a tick that would otherwise fire and re-render time=0.  */
+    if(timerRAF){cancelAnimationFrame(timerRAF);timerRAF=null;}
+    st.solved=true;
+    st.solveTime=rec.timeMs;
+    st.startTime=null;
+    st.timerPending=false;
+    document.getElementById('mvcnt').textContent=st.moves;
+    updateTimerDisplay(st.solveTime);
+    document.getElementById('msg').textContent='';
+    /* Static "won" styling on the tiles so the board behind the
+       overlay looks solved if/when the user toggles Show Board.
+       No animation — that would be a fake celebration on reload. */
+    document.querySelectorAll('.tile').forEach(el=>{
+      el.style.transition='none';
+      el.style.borderColor='rgba(76,217,100,.8)';
+      el.style.borderStyle='solid';
+    });
+    showWinUI();
+  } else {
+    // Fresh puzzle for today. Same seed formula as the old level
+    // system so the generator's well-tested seed range is reused.
+    const seed=puzzleNum*997+42;
+    initSt(generate(seed));
+    build();
+  }
+  startCountdown();
+}
 
 /* ── Debug ───────────────────────────────────────────────────
    Uniqueness is enforced by the generator (resF.uniq check),
@@ -1230,7 +1437,7 @@ window.addEventListener('orientationchange',()=>setTimeout(fitToViewport,200));
 
 tutRender();
 if(!hasVisited())document.getElementById('tut').classList.add('show');
-load(1);
+loadDaily();
 // Defer to next frame so the just-built board has settled into layout
 requestAnimationFrame(fitToViewport);</script>
 </body>
