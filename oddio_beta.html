@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Oddio — Think in Odds</title>
+<title>Oddio — Oddly Addicting</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 body{background:#070D18;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,sans-serif;overflow:hidden}
@@ -43,14 +43,13 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .tile.v0{
   background:#162033;
   color:#4DA3FF;
-  border:1.5px dashed rgba(77,163,255,.45);
+  border:1px solid transparent;
   box-shadow:0 2px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(77,163,255,.08);
 }
-/* Mutable 1 = odd = red */
 .tile.v1{
   background:#1E1826;
   color:#FF6B6B;
-  border:1.5px dashed rgba(255,107,107,.45);
+  border:1px solid transparent;
   box-shadow:0 2px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,107,107,.08);
 }
 .tile:not(.lk):active{transform:scale(.93)}
@@ -85,12 +84,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .tile.popping{animation:pop .17s ease}
 .tile.hinting{animation:hglow .55s ease 3}
 /* Subgrid overlays */
-.sgov{position:absolute;pointer-events:none;z-index:3;transition:filter .3s}
-.sgov .c{position:absolute;width:14px;height:14px}
-.sgov .tl{top:0;left:0;border-top:2.5px solid;border-left:2.5px solid;border-radius:5px 0 0 0}
-.sgov .tr{top:0;right:0;border-top:2.5px solid;border-right:2.5px solid;border-radius:0 5px 0 0}
-.sgov .bl{bottom:0;left:0;border-bottom:2.5px solid;border-left:2.5px solid;border-radius:0 0 0 5px}
-.sgov .br{bottom:0;right:0;border-bottom:2.5px solid;border-right:2.5px solid;border-radius:0 0 5px 0}
+.sgov{position:absolute;pointer-events:none;z-index:3;transition:filter .3s,outline-color .3s;border-radius:6px;outline:1.5px dashed transparent;outline-offset:-2px}
 .sgov .lbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:700;letter-spacing:.5px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid;background:#0C1523;transition:opacity .25s,box-shadow .25s}
 /* Bottom bar */
 #bot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:0 2px}
@@ -146,14 +140,12 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .wb-cell.mut{background:rgba(76,217,100,.22);border:1.5px solid rgba(76,217,100,.55)}
 /* Bracket overlays on win-board — scaled-down .sgov */
 .wb-sgov{position:absolute;pointer-events:none}
-.wb-sgc{position:absolute;width:9px;height:9px}
-.wb-sgov .tl{top:0;left:0;border-top:1.5px solid;border-left:1.5px solid;border-radius:3px 0 0 0}
-.wb-sgov .tr{top:0;right:0;border-top:1.5px solid;border-right:1.5px solid;border-radius:0 3px 0 0}
-.wb-sgov .bl{bottom:0;left:0;border-bottom:1.5px solid;border-left:1.5px solid;border-radius:0 0 0 3px}
-.wb-sgov .br{bottom:0;right:0;border-bottom:1.5px solid;border-right:1.5px solid;border-radius:0 0 3px 0}
 .wb-sglbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:8px;font-weight:700;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid;background:#070D18}
-.wb-sgov.e .wb-sgc,.wb-sgov.e .wb-sglbl{border-color:#4DA3FF;color:#4DA3FF}
-.wb-sgov.o .wb-sgc,.wb-sgov.o .wb-sglbl{border-color:#FF6B6B;color:#FF6B6B}
+.wb-sgov.e .wb-sglbl{border-color:#4DA3FF;color:#4DA3FF}
+.wb-sgov.o .wb-sglbl{border-color:#FF6B6B;color:#FF6B6B}
+.wb-sgov{outline-style:dashed;outline-width:1px;outline-offset:-1.5px;border-radius:4px}
+.wb-sgov.e{outline-color:#4DA3FF}
+.wb-sgov.o{outline-color:#FF6B6B}
 /* Win buttons row */
 #win-btns{display:flex;gap:7px;margin-top:2px}
 #nxt{background:#4DA3FF;color:#071018;border:none;border-radius:10px;padding:9px 18px;font-size:12px;font-weight:600;cursor:pointer}
@@ -210,7 +202,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 <body>
 <div id="og">
   <div id="hdr">
-    <div><div id="logo">ODDIO</div><div id="tagline">THINK IN ODDS</div></div>
+    <div><div id="logo">ODDIO</div><div id="tagline">Oddly Addicting</div></div>
     <div id="hdr-right">
       <div id="lvllbl">Level 1</div>
       <button class="dbt" onclick="newRandom()">↺ New</button>
@@ -380,7 +372,12 @@ function sgSat([sr,sc,tgt],vals){
   return(s%2)===tgt;
 }
 
-/* ── Subgrid picker ──────────────────────────────────────── */
+/* ── Subgrid picker ──────────────────────────────────────────
+   Brackets do NOT overlap. No cell is in more than one bracket.
+   This is enforced by tracking used cells in a Set. As a side
+   effect of 2×2 brackets in a 5×5 grid, geometry prevents more
+   than 2 brackets in any bracket-row or bracket-col (the third
+   would always overlap), so visual chains are impossible.    */
 function pickSubgrids(rn,solVals,count){
   if(count<=0)return[];
   const pos=[];for(let r=0;r<=N-2;r++)for(let c=0;c<=N-2;c++)pos.push([r,c]);
@@ -390,7 +387,6 @@ function pickSubgrids(rn,solVals,count){
     if(chosen.length>=count)break;
     const cells=sgCells([sr,sc]);
     if(cells.some(([r,c])=>used.has(r*N+c)))continue;
-    // Target derived from solution — guaranteed satisfiable
     const tgt=cells.reduce((s,[r,c])=>s+solVals[r*N+c],0)%2;
     chosen.push([sr,sc,tgt]);
     cells.forEach(([r,c])=>used.add(r*N+c));
@@ -400,14 +396,17 @@ function pickSubgrids(rn,solVals,count){
 
 
 /* ── Difficulty ──────────────────────────────────────────── */
-// [lockRatio, sgCount, minMoves]
+// [lockRatio, sgCount, minMovesLow, minMovesHigh]
 // Difficulty controls how many tiles are locked, how many subgrids, and
-// the minimum number of flips a puzzle requires from the starting state.
+// the per-puzzle min-moves floor (picked uniformly from [low, high]).
+// The randomized floor varies puzzle length without sacrificing the
+// no-guessing guarantee — Step 7 still enforces propagation solvability.
 const DIFF=[
-  [0.60, 0, 4],  // Easy   — ~60% locked, 0 subgrids, ≥4 moves
-  [0.32, 2, 4],  // Medium — ~32% locked, 2 subgrids, ≥4 moves
-  [0.04, 3, 8],  // Hard   — ~4% locked,  3 subgrids, ≥8 moves
-                 //          Step 7 enforces propagation solvability.
+  [0.60, 0,  4,  4],   // Easy   — ~60% locked, 0 subgrids, exactly 4 moves
+  [0.32, 2,  4,  6],   // Medium — ~32% locked, 2 subgrids, 4-6 moves
+  [0,    4, 10, 13],   // Hard   — 0 initial locks, 4 (overlapping) brackets, 10-13 moves
+                       //          pickSubgrids caps brackets per bracket-row/col
+                       //          at 2, so no "3 in a row" visual chains.
 ];
 
 /* ── Generator — deterministic, no outer retry loop ──────────
@@ -452,7 +451,11 @@ const DIFF=[
    No outer retry loop. No move-count filter. No fallback.      */
 function generate(seed,_attempt=0){
   const rn=mkRng(seed!=null?seed:(Math.random()*1e9)|0);
-  const[lockRatio,sgCount,MIN_MOVES]=DIFF[2];  // always Hard
+  const[lockRatio,sgCount,MIN_LO,MIN_HI]=DIFF[2];  // always Hard
+  // Per-puzzle min-moves floor — random in [MIN_LO, MIN_HI] inclusive.
+  // Variance here propagates into unlocked-count variance via Step 7,
+  // so puzzles differ in both length and visible-tile density.
+  const MIN_MOVES=MIN_LO+Math.floor(rn()*(MIN_HI-MIN_LO+1));
 
   /* Step 1: Globally-valid binary solution by construction.
      Pick 24 bits freely. Set cell [4][4] so that XOR of all
@@ -511,14 +514,22 @@ function generate(seed,_attempt=0){
   /* Step 6: Fix pre-satisfied subgrids.
      If an even number of cells in a subgrid are unlocked,
      all were flipped → parity sum unchanged → subgrid is
-     pre-satisfied. Fix: revert one unlocked cell to its
-     solution value (flips parity sum by 1 → unsatisfied). */
-  for(const sg of sgs){
-    if(!sgSat(sg,startVals))continue; // already unsatisfied — fine
-    const unlockedCells=sgCells(sg).filter(([r,c])=>!locked[r*N+c]);
-    if(unlockedCells.length===0)continue; // all locked — can't fix, but rare
-    const[fr,fc]=unlockedCells[0];
-    startVals[fr*N+fc]=solVals[fr*N+fc]; // revert to solution value
+     pre-satisfied. Fix: flip one unlocked cell → flips parity.
+
+     With overlapping brackets, fixing one can re-satisfy or
+     break another (the flipped cell may belong to multiple
+     brackets). Iterate until stable.                         */
+  for(let iter=0;iter<20;iter++){
+    let fixedAny=false;
+    for(const sg of sgs){
+      if(!sgSat(sg,startVals))continue; // already unsatisfied — fine
+      const unlockedCells=sgCells(sg).filter(([r,c])=>!locked[r*N+c]);
+      if(unlockedCells.length===0)continue; // all locked — can't fix, but rare
+      const[fr,fc]=unlockedCells[0];
+      startVals[fr*N+fc]^=1; // flip — changes parity of every subgrid containing this cell
+      fixedAny=true;
+    }
+    if(!fixedAny)break;
   }
 
   /* Step 7: Ensure constraint-propagation solvability.
@@ -655,16 +666,19 @@ function clearHint(el){
    requestAnimationFrame gives smooth millisecond updates and
    pauses cleanly when the tab is backgrounded.                */
 let timerRAF=null;
-function fmtTime(ms){
-  ms=Math.max(0,Math.floor(ms));
-  const totalSec=Math.floor(ms/1000);
-  const millis=ms%1000;
-  const min=Math.floor(totalSec/60);
-  const sec=totalSec%60;
-  const ms3=String(millis).padStart(3,'0');
-  return min>0
-    ?`${min}:${String(sec).padStart(2,'0')}.${ms3}`
-    :`${sec}.${ms3}`;
+function fmtTime(ms) {
+  ms = Math.max(0, Math.floor(ms));
+  const totalSec = Math.floor(ms / 1000);
+  
+  // Get only the first digit of milliseconds (tenths)
+  const tenths = Math.floor((ms % 1000) / 100); 
+  
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+
+  return min > 0
+    ? `${min}:${String(sec).padStart(2, '0')}.${tenths}`
+    : `${sec}.${tenths}`;
 }
 function updateTimerDisplay(ms){
   const el=document.getElementById('tmcnt');
@@ -777,10 +791,10 @@ function refresh(){
     const ov=document.querySelector(`.sgov[data-sg="${idx}"]`);if(!ov)return;
     const ok=sgOk(sg),isE=sg[2]===0;
     const col=ok?(isE?SAT_E:SAT_O):(isE?IDLE_E:IDLE_O);
-    ov.querySelectorAll('.c').forEach(c=>c.style.borderColor=col);
     const lbl=ov.querySelector('.lbl');
     if(lbl){lbl.style.color=col;lbl.style.borderColor=col;lbl.style.opacity=ok?'1':'.7';lbl.style.boxShadow=ok?`0 0 6px ${isE?'rgba(77,163,255,.4)':'rgba(255,107,107,.4)'}`:'none';}
     ov.style.filter=ok?`drop-shadow(0 0 3px ${isE?'rgba(77,163,255,.35)':'rgba(255,107,107,.35)'})`:'none';
+    ov.style.outlineColor=col;
   });
   const badRC=Array.from({length:N}).reduce((s,_,i)=>s+(!rowOk(i)?1:0)+(!colOk(i)?1:0),0);
   const badSG=st.sgs.filter(sg=>!sgOk(sg)).length;
@@ -861,9 +875,6 @@ function buildWinBoard(){
     ov.style.top=`${sr*WB_CELL-pad}px`;
     const sz=WB_TW*2+WB_GAP+pad*2;
     ov.style.width=sz+'px';ov.style.height=sz+'px';
-    ['tl','tr','bl','br'].forEach(cls=>{
-      const c=document.createElement('div');c.className='wb-sgc '+cls;ov.appendChild(c);
-    });
     const lbl=document.createElement('div');lbl.className='wb-sglbl';lbl.textContent=isE?'E':'O';
     ov.appendChild(lbl);
     grid.appendChild(ov);
@@ -944,7 +955,7 @@ function build(){
     ov.className='sgov';ov.dataset.sg=idx;
     ov.style.left=`${sc*CELL-pad}px`;ov.style.top=`${sr*CELL-pad}px`;
     ov.style.width=`${sz+pad*2}px`;ov.style.height=`${sz+pad*2}px`;
-    ['tl','tr','bl','br'].forEach(cls=>{const c=document.createElement('div');c.className=`c ${cls}`;c.style.borderColor=idleCol;ov.appendChild(c);});
+    ov.style.outlineColor=idleCol;
     const lbl=document.createElement('div');lbl.className='lbl';lbl.textContent=isE?'E':'O';
     lbl.style.color=idleCol;lbl.style.borderColor=idleCol;lbl.style.opacity='.7';
     ov.appendChild(lbl);gr.appendChild(ov);
