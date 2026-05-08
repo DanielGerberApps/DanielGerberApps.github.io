@@ -17,16 +17,16 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .dbt:hover{color:rgba(234,242,255,.9);border-color:rgba(255,255,255,.2)}
 #msg{height:15px;text-align:center;font-size:10px;color:rgba(234,242,255,.3);margin-bottom:8px}
 #board{display:inline-flex;flex-direction:column;gap:5px}
-#colrow{display:flex;gap:5px;padding-left:27px}
+#colrow{display:flex;gap:7px;padding-left:27px}
 .ci{width:52px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;transition:all .25s}
 .ri{width:20px;height:52px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;transition:all .25s}
-.e{background:rgba(77,163,255,.12);color:rgba(77,163,255,.45)}
-.o{background:rgba(255,107,107,.12);color:rgba(255,107,107,.45)}
-.e.sat{background:rgba(77,163,255,.28);color:#4DA3FF;box-shadow:0 0 7px rgba(77,163,255,.22)}
-.o.sat{background:rgba(255,107,107,.28);color:#FF6B6B;box-shadow:0 0 7px rgba(255,107,107,.22)}
+.e{background:rgba(77,163,255,.08);color:rgba(77,163,255,.40)}
+.o{background:rgba(255,107,107,.08);color:rgba(255,107,107,.40)}
+.e.sat{background:rgba(77,163,255,.75);color:#0A1220;box-shadow:0 0 8px rgba(77,163,255,.35)}
+.o.sat{background:rgba(255,107,107,.75);color:#1F0A0A;box-shadow:0 0 8px rgba(255,107,107,.35)}
 #grow{display:flex;gap:5px}
-#rinds{display:flex;flex-direction:column;gap:5px}
-#grid{display:grid;grid-template-columns:repeat(5,52px);gap:5px;position:relative}
+#rinds{display:flex;flex-direction:column;gap:7px}
+#grid{display:grid;grid-template-columns:repeat(5,52px);gap:7px;position:relative}
 /* ── Mutable tiles — interactive, clearly tappable ──────────
    Light background with a strong color tint matching value.
    Dashed border signals "this can change".
@@ -84,7 +84,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .tile.popping{animation:pop .17s ease}
 .tile.hinting{animation:hglow .55s ease 3}
 /* Subgrid overlays */
-.sgov{position:absolute;pointer-events:none;z-index:3;transition:filter .3s,outline-color .3s;border-radius:6px;outline:1.5px dashed transparent;outline-offset:-2px}
+.sgov{position:absolute;pointer-events:none;z-index:3;transition:filter .3s,outline-color .3s;border-radius:6px;outline:1.5px dashed transparent;outline-offset:-1px}
 .sgov .lbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:700;letter-spacing:.5px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid;background:#0C1523;transition:opacity .25s,box-shadow .25s}
 /* Bottom bar */
 #bot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:0 2px}
@@ -123,10 +123,10 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 #win-par{font-size:11px;color:rgba(234,242,255,.5);font-weight:500;letter-spacing:.2px;margin-top:-3px}
 /* Mini board */
 #win-board{display:flex;flex-direction:column;gap:3px;margin:2px 0}
-.wb-col-header{display:flex;gap:3px;padding-left:16px}  /* 13(rinds) + 3(gap) */
+.wb-col-header{display:flex;gap:4px;padding-left:16px}  /* 13(rinds) + 3(wb-body gap) */
 .wb-body{display:flex;gap:3px;align-items:flex-start}
-.wb-rinds{display:flex;flex-direction:column;gap:3px}
-.wb-grid{display:grid;grid-template-columns:repeat(5,34px);gap:3px;position:relative}
+.wb-rinds{display:flex;flex-direction:column;gap:4px}
+.wb-grid{display:grid;grid-template-columns:repeat(5,34px);gap:4px;position:relative}
 .wb-ci,.wb-ri{display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;border-radius:6px}
 .wb-ci{width:34px;height:13px}
 .wb-ri{width:13px;height:34px}
@@ -143,7 +143,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .wb-sglbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:8px;font-weight:700;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid;background:#070D18}
 .wb-sgov.e .wb-sglbl{border-color:#4DA3FF;color:#4DA3FF}
 .wb-sgov.o .wb-sglbl{border-color:#FF6B6B;color:#FF6B6B}
-.wb-sgov{outline-style:dashed;outline-width:1px;outline-offset:-1.5px;border-radius:4px}
+.wb-sgov{outline-style:dashed;outline-width:1px;outline-offset:-1px;border-radius:4px}
 .wb-sgov.e{outline-color:#4DA3FF}
 .wb-sgov.o{outline-color:#FF6B6B}
 /* Win buttons row */
@@ -202,10 +202,10 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 <body>
 <div id="og">
   <div id="hdr">
-    <div><div id="logo">ODDIO</div><div id="tagline">Oddly Addicting</div></div>
+    <div><div id="logo"><span class="dot-o blue-dot">O</span>DDI<span class="dot-o orange-dot">O</span></div><div id="tagline">Oddly Addicting</div></div>
     <div id="hdr-right">
       <div id="lvllbl">Level 1</div>
-      <button class="dbt" onclick="newRandom()">↺ New</button>
+      <button class="dbt" onclick="tutStep=0; tutRender(); document.getElementById('tut').classList.add('show');">❓ Help</button>
     </div>
   </div>
   <div id="msg">Tap a tile to flip its value</div>
@@ -274,7 +274,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 
 <script>
 'use strict';
-const N=5, TW=52, GAP=5, CELL=TW+GAP;
+const N=5, TW=52, GAP=7, CELL=TW+GAP;
 let st, undos=[], lvl=1, hintCharges=3;
 
 /* ── RNG ─────────────────────────────────────────────────── */
@@ -396,17 +396,24 @@ function pickSubgrids(rn,solVals,count){
 
 
 /* ── Difficulty ──────────────────────────────────────────── */
-// [lockRatio, sgCount, minMovesLow, minMovesHigh]
-// Difficulty controls how many tiles are locked, how many subgrids, and
-// the per-puzzle min-moves floor (picked uniformly from [low, high]).
-// The randomized floor varies puzzle length without sacrificing the
-// no-guessing guarantee — Step 7 still enforces propagation solvability.
+// [lockRatio, sgCount, minMovesLow, minMovesHigh, maxMoves]
+// Difficulty controls how many tiles are locked, how many subgrids, the
+// per-puzzle min-moves floor (picked uniformly from [low, high]), and a
+// hard cap on max moves. The randomized floor varies puzzle length without
+// sacrificing the no-guessing guarantee — Step 7 still enforces
+// propagation solvability. The max cap keeps puzzles close to the
+// target average length (Step 8b reverts excess wrong tiles to correct).
 const DIFF=[
-  [0.60, 0,  4,  4],   // Easy   — ~60% locked, 0 subgrids, exactly 4 moves
-  [0.32, 2,  4,  6],   // Medium — ~32% locked, 2 subgrids, 4-6 moves
-  [0,    4, 10, 13],   // Hard   — 0 initial locks, 4 (overlapping) brackets, 10-13 moves
-                       //          pickSubgrids caps brackets per bracket-row/col
-                       //          at 2, so no "3 in a row" visual chains.
+  [0.60, 0,  4,  4,  6 ],   // Easy   — ~60% locked, 0 subgrids, 4-6 moves
+  [0.32, 2,  4,  6,  8 ],   // Medium — ~32% locked, 2 subgrids, 4-8 moves
+  [0,    4,  9, 11, 12 ],   // Hard   — 0 initial locks, brackets vary 3 or 4,
+                            //          9-12 moves (target average ~10).
+                            //          The sgCount field here is unused at
+                            //          Hard — actual count is randomized
+                            //          per-puzzle to 3 or 4 in generate().
+                            //          pickSubgrids caps brackets per
+                            //          bracket-row/col at 2, so no
+                            //          "3 in a row" visual chains.
 ];
 
 /* ── Generator — deterministic, no outer retry loop ──────────
@@ -451,7 +458,12 @@ const DIFF=[
    No outer retry loop. No move-count filter. No fallback.      */
 function generate(seed,_attempt=0){
   const rn=mkRng(seed!=null?seed:(Math.random()*1e9)|0);
-  const[lockRatio,sgCount,MIN_LO,MIN_HI]=DIFF[2];  // always Hard
+  const[lockRatio,/*_sgMax*/,MIN_LO,MIN_HI,MAX_MOVES]=DIFF[2];  // always Hard
+  // Per-puzzle subgrid count: 3 or 4 (50/50). Drawing this from rn() means
+  // the count is part of the deterministic seed so puzzles remain
+  // reproducible. Drawing it FIRST (before any other rn() calls in this
+  // function) keeps that determinism stable even if later RNG usage shifts.
+  const sgCount = 3 + ((rn()*2)|0);
   // Per-puzzle min-moves floor — random in [MIN_LO, MIN_HI] inclusive.
   // Variance here propagates into unlocked-count variance via Step 7,
   // so puzzles differ in both length and visible-tile density.
@@ -525,7 +537,11 @@ function generate(seed,_attempt=0){
       if(!sgSat(sg,startVals))continue; // already unsatisfied — fine
       const unlockedCells=sgCells(sg).filter(([r,c])=>!locked[r*N+c]);
       if(unlockedCells.length===0)continue; // all locked — can't fix, but rare
-      const[fr,fc]=unlockedCells[0];
+      // Random pick (not always [0]) so brackets within a subgrid don't
+      // develop a predictable "first-cell-different" starting pattern
+      // across puzzles. This contributes to per-bracket starting-state
+      // randomness for mutable tiles.
+      const[fr,fc]=unlockedCells[(rn()*unlockedCells.length)|0];
       startVals[fr*N+fc]^=1; // flip — changes parity of every subgrid containing this cell
       fixedAny=true;
     }
@@ -614,6 +630,27 @@ function generate(seed,_attempt=0){
       .sort((a,b)=>lockPos[a]-lockPos[b]);
     const need=Math.min(MIN_MOVES-wrongTiles.length,correctTiles.length);
     for(let k=0;k<need;k++)startVals[correctTiles[k]]=1-solVals[correctTiles[k]];
+  }
+
+  /* Step 8b: Enforce max-moves cap.
+     Random scramble in Step 5 can leave significantly more wrong tiles
+     than the target range. Flip the excess back to their solution
+     values so the puzzle stays close to the average length goal
+     (~10 moves on Hard). Same safety as Step 8: propagation
+     solvability is purely structural (depends on locked-set +
+     constraints, not startVals values), so flipping unlocked tiles'
+     values cannot break Step 7's guarantee.
+
+     We always keep wrongCount >= MIN_MOVES >= 1, so the board can
+     never become pre-solved by this step.                          */
+  const wrongAfterFloor=startVals.map((_,i)=>i)
+    .filter(i=>!locked[i]&&startVals[i]!==solVals[i]);
+  if(wrongAfterFloor.length>MAX_MOVES){
+    // Sort by lockPos so the choice of which tiles revert is
+    // deterministic given the seed — keeps generation reproducible.
+    wrongAfterFloor.sort((a,b)=>lockPos[a]-lockPos[b]);
+    const excess=wrongAfterFloor.length-MAX_MOVES;
+    for(let k=0;k<excess;k++)startVals[wrongAfterFloor[k]]=solVals[wrongAfterFloor[k]];
   }
 
   /* Step 9: Final invariants check + retry.
@@ -727,7 +764,15 @@ function doTap(i){
     el.classList.remove('popping');void el.offsetWidth;el.classList.add('popping');
     el.style.borderColor=v?'rgba(255,107,107,.9)':'rgba(77,163,255,.9)';
     el.style.borderStyle='solid';
-    setTimeout(()=>{if(!st.locked[i]){el.style.borderColor='';el.style.borderStyle='';}},220);
+    // Defer-clear the temporary tap border. Skip if the puzzle is now
+    // solved — doWin paints a green "win" border at i*30ms (DOM-staggered),
+    // and for tiles in DOM positions where i*30 < 220, our clear would
+    // otherwise wipe the green out a moment after it appeared.
+    setTimeout(()=>{
+      if(!st.locked[i] && !st.solved){
+        el.style.borderColor='';el.style.borderStyle='';
+      }
+    },220);
   }
   document.getElementById('mvcnt').textContent=st.moves;
   refresh();
@@ -866,7 +911,7 @@ function buildWinBoard(){
     grid.appendChild(cell);
   }
   // Bracket overlays — same positioning math as live .sgov, scaled
-  const WB_TW=34,WB_GAP=3,WB_CELL=WB_TW+WB_GAP,pad=3;
+  const WB_TW=34,WB_GAP=4,WB_CELL=WB_TW+WB_GAP,pad=2;
   st.sgs.forEach(sg=>{
     const[sr,sc,tgt]=sg,isE=tgt===0;
     const ov=document.createElement('div');
@@ -950,7 +995,7 @@ function build(){
   st.sgs.forEach((sg,idx)=>{
     const[sr,sc,tgt]=sg,isE=tgt===0;
     const idleCol=isE?IDLE_E:IDLE_O;
-    const pad=4,sz=TW*2+GAP;
+    const pad=2,sz=TW*2+GAP;
     const ov=document.createElement('div');
     ov.className='sgov';ov.dataset.sg=idx;
     ov.style.left=`${sc*CELL-pad}px`;ov.style.top=`${sr*CELL-pad}px`;
@@ -1127,7 +1172,30 @@ function tutNext(){
 }
 function tutSkip(){
   document.getElementById('tut').classList.remove('show');
+  markVisited();
   if(st&&st.timerPending)startTimer();
+}
+
+/* ── First-launch tutorial gate ───────────────────────────────
+   The tutorial auto-shows on the very first launch only. After
+   it's dismissed (via Skip, the final "Play!" button, or the X
+   on a Help-triggered replay) we set a localStorage flag so the
+   next launch goes straight to the puzzle.
+
+   Wrapped in try/catch because localStorage can throw in private
+   browsing, disabled cookies, sandboxed iframes, or some embedded
+   webviews. If storage is unavailable, we degrade gracefully by
+   always showing the tutorial — that's the safer default than
+   silently breaking.
+
+   The Help button (top-right) bypasses the flag entirely and
+   re-shows the tutorial on demand, regardless of visit state.   */
+const TUT_KEY='oddio_visited';
+function hasVisited(){
+  try{return localStorage.getItem(TUT_KEY)==='1';}catch(e){return false;}
+}
+function markVisited(){
+  try{localStorage.setItem(TUT_KEY,'1');}catch(e){/* storage unavailable — ignore */}
 }
 
 /* ── Viewport fit ─────────────────────────────────────────────
@@ -1161,7 +1229,7 @@ window.addEventListener('resize',()=>{clearTimeout(_fitTimer);_fitTimer=setTimeo
 window.addEventListener('orientationchange',()=>setTimeout(fitToViewport,200));
 
 tutRender();
-document.getElementById('tut').classList.add('show');
+if(!hasVisited())document.getElementById('tut').classList.add('show');
 load(1);
 // Defer to next frame so the just-built board has settled into layout
 requestAnimationFrame(fitToViewport);</script>
