@@ -179,8 +179,8 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 #tut-visual{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0}
 /* Tutorial mini-tiles */
 .tt{width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
-.tt.e{background:#162033;color:#4DA3FF;border:1.5px dashed rgba(77,163,255,.55)}
-.tt.o{background:#1E1826;color:#FF6B6B;border:1.5px dashed rgba(255,107,107,.55)}
+.tt.e{background:#162033;color:#4DA3FF;border:1px solid transparent}
+.tt.o{background:#1E1826;color:#FF6B6B;border:1px solid transparent}
 .tt.lk{background:#0D1620;color:rgba(255,255,255,.75);border:1.5px solid rgba(255,255,255,.2);cursor:default}
 .tt.ok{border-style:solid}
 /* Row/col indicator mini */
@@ -1286,8 +1286,8 @@ function toggleSolution(){
 const TUT_STEPS=[
   /* Step 1 — E/O goal, explained with two concrete row examples */
   {
-    title:'E or O?',
-    desc:'Every row and column has a letter on its edge. <strong style="color:#4DA3FF">E</strong> means it needs an <strong>even</strong> number of 1s&nbsp;(0, 2, or 4). <strong style="color:#FF6B6B">O</strong> means it needs an <strong>odd</strong> number&nbsp;(1, 3, or 5).',
+    title:'Rules',
+    desc:'Each row and column has a letter.<br><strong style="color:#4DA3FF">E</strong> means it needs to sum to an <strong>even</strong> number.<br><strong style="color:#FF6B6B">O</strong> means it needs to sum to an <strong>odd</strong> number.',
     visual:`<div style="display:flex;flex-direction:column;gap:7px">
       <div style="display:flex;gap:5px;align-items:center">
         <div class="tind e sat" style="height:36px;font-size:9px">E</div>
@@ -1314,7 +1314,7 @@ const TUT_STEPS=[
   /* Step 2 — mutable vs locked, no dashed-border language */
   {
     title:'Tap to flip',
-    desc:'Tap a <strong style="color:#4DA3FF">colored tile</strong> to flip it between 0 and 1. Tiles with a <strong style="color:rgba(234,242,255,.75)">white number</strong> are locked — fixed clues baked into the puzzle that you cannot change.',
+    desc:'Tap a <strong style="color:#4DA3FF">colored tile</strong> to flip it between 0 and 1. Tiles with a <strong style="color:rgba(234,242,255,.75)">white number</strong> cannot be changed.',
     visual:`<div style="display:flex;gap:28px;align-items:flex-start">
       <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
         <div style="display:flex;align-items:center;gap:6px">
@@ -1322,7 +1322,7 @@ const TUT_STEPS=[
           <div class="t-arr">→</div>
           <div class="tt e" style="width:46px;height:46px;font-size:22px">0</div>
         </div>
-        <div style="font-size:9px;color:rgba(234,242,255,.45);letter-spacing:.8px;font-weight:600">YOURS TO FLIP</div>
+        <div style="font-size:9px;color:rgba(234,242,255,.45);letter-spacing:.8px;font-weight:600">ABLE TO FLIP</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
         <div style="width:46px;height:46px;display:flex;align-items:center;justify-content:center">
@@ -1335,7 +1335,7 @@ const TUT_STEPS=[
   /* Step 3 — interactive: user must flip a tile to satisfy the O row */
   {
     title:'Your turn',
-    desc:'The row needs an <strong style="color:#FF6B6B">Odd</strong> number of 1s. Tap the middle tile to complete it.',
+    desc:'The row needs to be <strong style="color:#FF6B6B">Odd</strong>. Tap the middle tile to flip it.',
     visual:`<div style="display:flex;flex-direction:column;align-items:center;gap:10px">
       <div style="display:flex;gap:5px;align-items:center">
         <div id="tut-iind" class="tind o" style="height:46px;font-size:9px">O</div>
@@ -1361,12 +1361,12 @@ const TUT_STEPS=[
         tile.style.cssText='width:46px;height:46px;font-size:22px;cursor:pointer';
         if(ok){
           ind.className='tind o sat';
-          fb.textContent=`${sum} ones — odd \u2713 Now tap Next`;
+          fb.textContent=`${sum} ones makes the row odd \u2713`;
           fb.style.color='rgba(76,217,100,.9)';
           btn.disabled=false;btn.style.opacity='';
         } else {
           ind.className='tind o';
-          fb.textContent=`${sum} ones — even, not odd \u2717`;
+          fb.textContent=`${sum} ones — this row currently sums to an even number\u2717`;
           fb.style.color='rgba(255,107,107,.5)';
           btn.disabled=true;btn.style.opacity='0.35';
         }
@@ -1380,11 +1380,11 @@ const TUT_STEPS=[
       update();
     }
   },
-  /* Step 4 — brackets and hints */
+  /* Step 4 — subgrids */
   {
-    title:'Brackets & hints',
-    desc:'Every puzzle includes <strong style="color:#EAF2FF">brackets</strong> — small 2×2 zones with their own E or O goal, just like rows and columns. Stuck? Tap 💡 for a hint (you get 3).',
-    visual:`<div style="display:flex;align-items:center;gap:24px">
+    title:'Subgrids',
+    desc:'Every puzzle includes <strong style="color:#EAF2FF">subgrids</strong> — small 2×2 zones marked with a <strong style="color:#EAF2FF">dashed border</strong> and their own E or O goal, just like rows and columns.',
+    visual:`<div style="display:flex;align-items:center;justify-content:center">
       <div style="position:relative;padding:8px">
         <div style="display:grid;grid-template-columns:repeat(2,40px);gap:4px">
           <div class="tt o"  style="width:40px;height:40px;font-size:18px">1</div>
@@ -1392,15 +1392,8 @@ const TUT_STEPS=[
           <div class="tt lk" style="width:40px;height:40px;font-size:18px">0</div>
           <div class="tt o"  style="width:40px;height:40px;font-size:18px">1</div>
         </div>
-        <div style="position:absolute;top:2px;left:2px;width:13px;height:13px;border-top:2.5px solid #FF6B6B;border-left:2.5px solid #FF6B6B;border-radius:4px 0 0 0"></div>
-        <div style="position:absolute;top:2px;right:2px;width:13px;height:13px;border-top:2.5px solid #FF6B6B;border-right:2.5px solid #FF6B6B;border-radius:0 4px 0 0"></div>
-        <div style="position:absolute;bottom:2px;left:2px;width:13px;height:13px;border-bottom:2.5px solid #FF6B6B;border-left:2.5px solid #FF6B6B;border-radius:0 0 0 4px"></div>
-        <div style="position:absolute;bottom:2px;right:2px;width:13px;height:13px;border-bottom:2.5px solid #FF6B6B;border-right:2.5px solid #FF6B6B;border-radius:0 0 4px 0"></div>
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#0C1523;border:1.5px solid #FF6B6B;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#FF6B6B">O</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-        <div style="font-size:28px">💡</div>
-        <div style="font-size:10px;color:rgba(255,214,10,.65);font-weight:600;letter-spacing:.5px">3 HINTS</div>
+        <div style="position:absolute;inset:2px;border:2px dashed rgba(77,163,255,.7);border-radius:6px;pointer-events:none"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#0C1523;border:1.5px solid #4DA3FF;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#4DA3FF">E</div>
       </div>
     </div>`
   }
