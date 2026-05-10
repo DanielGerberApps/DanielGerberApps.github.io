@@ -195,8 +195,13 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .tdot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);transition:background .2s}
 .tdot.on{background:#4DA3FF}
 /* Tutorial next button */
-#tut-next{background:#4DA3FF;color:#071018;border:none;border-radius:11px;padding:12px 36px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
+#tut-next{background:#4DA3FF;color:#071018;border:none;border-radius:11px;padding:12px 36px;font-size:14px;font-weight:700;cursor:pointer;width:100%;transition:opacity .2s}
 #tut-next:active{transform:scale(.97)}
+#tut-next:disabled{cursor:default}
+/* Pop animation for interactive tutorial tile */
+.tt.popping{animation:pop .17s ease}
+/* Satisfied O indicator in tutorial */
+.tind.o.sat{background:rgba(255,107,107,.28);color:#FF6B6B}
 
 .tile .sol-ov{
   position:absolute;inset:0;border-radius:9px;
@@ -1279,76 +1284,113 @@ function toggleSolution(){
 
 /* ── Tutorial ─────────────────────────────────────────────── */
 const TUT_STEPS=[
+  /* Step 1 — E/O goal, explained with two concrete row examples */
   {
-    title:'Welcome to ODDIO',
-    desc:'Fill the grid so every row, column, and bracket has the right number of 1s — <strong style="color:#4DA3FF">Even</strong> or <strong style="color:#FF6B6B">Odd</strong>.',
-    visual:`<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-      <div style="font-size:10px;color:rgba(234,242,255,.3);letter-spacing:1px;margin-bottom:2px">EXAMPLE</div>
+    title:'E or O?',
+    desc:'Every row and column has a letter on its edge. <strong style="color:#4DA3FF">E</strong> means it needs an <strong>even</strong> number of 1s&nbsp;(0, 2, or 4). <strong style="color:#FF6B6B">O</strong> means it needs an <strong>odd</strong> number&nbsp;(1, 3, or 5).',
+    visual:`<div style="display:flex;flex-direction:column;gap:7px">
       <div style="display:flex;gap:5px;align-items:center">
-        <div style="width:22px;height:36px;border-radius:7px;background:rgba(77,163,255,.12);color:rgba(77,163,255,.6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">E</div>
-        <div class="tt e" style="width:36px;height:36px;font-size:15px">0</div>
-        <div class="tt o" style="width:36px;height:36px;font-size:15px">1</div>
-        <div class="tt e" style="width:36px;height:36px;font-size:15px">0</div>
-        <div class="tt o" style="width:36px;height:36px;font-size:15px">1</div>
-        <div class="tt e" style="width:36px;height:36px;font-size:15px;border-style:solid">0</div>
+        <div class="tind e sat" style="height:36px;font-size:9px">E</div>
+        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
+        <div class="tt o"  style="width:36px;height:36px;font-size:14px">1</div>
+        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
+        <div class="tt o"  style="width:36px;height:36px;font-size:14px">1</div>
+        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
+        <div style="font-size:13px;margin-left:3px">✓</div>
       </div>
-      <div style="font-size:10px;color:rgba(77,163,255,.65)">Two 1s in this row — that's even ✓</div>
+      <div style="font-size:10px;color:rgba(77,163,255,.7);padding-left:30px">two 1s — even</div>
+      <div style="display:flex;gap:5px;align-items:center;margin-top:4px">
+        <div class="tind o sat" style="height:36px;font-size:9px">O</div>
+        <div class="tt o"  style="width:36px;height:36px;font-size:14px">1</div>
+        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
+        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
+        <div class="tt o"  style="width:36px;height:36px;font-size:14px">1</div>
+        <div class="tt o"  style="width:36px;height:36px;font-size:14px">1</div>
+        <div style="font-size:13px;margin-left:3px">✓</div>
+      </div>
+      <div style="font-size:10px;color:rgba(255,107,107,.7);padding-left:30px">three 1s — odd</div>
     </div>`
   },
+  /* Step 2 — mutable vs locked, no dashed-border language */
   {
     title:'Tap to flip',
-    desc:'Tap a tile to switch it between <strong style="color:#EAF2FF">0 and 1</strong>. Solid tiles are locked — they\'re clues to help you solve the puzzle.',
+    desc:'Tap a <strong style="color:#4DA3FF">colored tile</strong> to flip it between 0 and 1. Tiles with a <strong style="color:rgba(234,242,255,.75)">white number</strong> are locked — fixed clues baked into the puzzle that you cannot change.',
     visual:`<div style="display:flex;gap:28px;align-items:flex-start">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-        <div style="display:flex;align-items:center;gap:5px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:6px">
           <div class="tt o" style="width:46px;height:46px;font-size:22px">1</div>
-          <div style="font-size:16px;color:rgba(234,242,255,.3)">→</div>
+          <div class="t-arr">→</div>
           <div class="tt e" style="width:46px;height:46px;font-size:22px">0</div>
         </div>
-        <div style="font-size:10px;color:rgba(234,242,255,.5);letter-spacing:.8px;font-weight:600">YOU CAN TAP</div>
+        <div style="font-size:9px;color:rgba(234,242,255,.45);letter-spacing:.8px;font-weight:600">YOURS TO FLIP</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-        <div style="display:flex;align-items:center;height:46px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="width:46px;height:46px;display:flex;align-items:center;justify-content:center">
           <div class="tt lk" style="width:46px;height:46px;font-size:22px">1</div>
         </div>
-        <div style="font-size:10px;color:rgba(234,242,255,.5);letter-spacing:.8px;font-weight:600">LOCKED</div>
+        <div style="font-size:9px;color:rgba(234,242,255,.45);letter-spacing:.8px;font-weight:600">LOCKED</div>
       </div>
     </div>`
   },
+  /* Step 3 — interactive: user must flip a tile to satisfy the O row */
   {
-    title:'Read the edges',
-    desc:'Letters on the edges show each line\'s goal. <strong style="color:#4DA3FF">E</strong> = an <strong>even</strong> number of 1s. <strong style="color:#FF6B6B">O</strong> = an <strong>odd</strong> number of 1s.',
-    visual:`<div style="display:flex;flex-direction:column;gap:4px">
-      <div style="display:flex;gap:4px;align-items:center">
-        <div style="width:22px;height:36px;border-radius:7px;background:rgba(77,163,255,.12);color:rgba(77,163,255,.6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">E</div>
-        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
-        <div class="tt o" style="width:36px;height:36px;font-size:14px;border-style:solid">1</div>
-        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
-        <div class="tt e" style="width:36px;height:36px;font-size:14px;border-style:solid">0</div>
-        <div class="tt o" style="width:36px;height:36px;font-size:14px;border-style:solid">1</div>
-        <div style="font-size:14px;margin-left:2px">✓</div>
+    title:'Your turn',
+    desc:'The row needs an <strong style="color:#FF6B6B">Odd</strong> number of 1s. Tap the middle tile to complete it.',
+    visual:`<div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div style="display:flex;gap:5px;align-items:center">
+        <div id="tut-iind" class="tind o" style="height:46px;font-size:9px">O</div>
+        <div class="tt lk" style="width:46px;height:46px;font-size:22px">1</div>
+        <div id="tut-itile" class="tt e" style="width:46px;height:46px;font-size:22px;cursor:pointer">0</div>
+        <div class="tt lk" style="width:46px;height:46px;font-size:22px">1</div>
       </div>
-      <div style="display:flex;gap:4px;align-items:center">
-        <div style="width:22px;height:36px;border-radius:7px;background:rgba(255,107,107,.12);color:rgba(255,107,107,.6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">O</div>
-        <div class="tt e" style="width:36px;height:36px;font-size:14px;border-style:solid">0</div>
-        <div class="tt lk" style="width:36px;height:36px;font-size:14px">1</div>
-        <div class="tt o" style="width:36px;height:36px;font-size:14px;border-style:solid">1</div>
-        <div class="tt lk" style="width:36px;height:36px;font-size:14px">0</div>
-        <div class="tt e" style="width:36px;height:36px;font-size:14px;border-style:solid">0</div>
-        <div style="font-size:14px;margin-left:2px">✓</div>
-      </div>
-    </div>`
+      <div id="tut-ifb" style="font-size:11px;letter-spacing:.2px;height:16px;transition:color .2s"></div>
+    </div>`,
+    /* Called by tutRender after innerHTML is set. Attaches the
+       interactive behaviour and gates the Next button.        */
+    setup(container){
+      let val=0;
+      const tile=document.getElementById('tut-itile');
+      const ind=document.getElementById('tut-iind');
+      const fb=document.getElementById('tut-ifb');
+      const btn=document.getElementById('tut-next');
+      const update=()=>{
+        const sum=1+val+1; // locked 1 + mutable + locked 1
+        const ok=sum%2===1;
+        tile.textContent=val;
+        tile.className='tt '+(val?'o':'e');
+        tile.style.cssText='width:46px;height:46px;font-size:22px;cursor:pointer';
+        if(ok){
+          ind.className='tind o sat';
+          fb.textContent=`${sum} ones — odd \u2713 Now tap Next`;
+          fb.style.color='rgba(76,217,100,.9)';
+          btn.disabled=false;btn.style.opacity='';
+        } else {
+          ind.className='tind o';
+          fb.textContent=`${sum} ones — even, not odd \u2717`;
+          fb.style.color='rgba(255,107,107,.5)';
+          btn.disabled=true;btn.style.opacity='0.35';
+        }
+      };
+      tile.addEventListener('click',()=>{
+        val^=1;
+        tile.classList.remove('popping');void tile.offsetWidth;tile.classList.add('popping');
+        update();
+      });
+      btn.disabled=true;btn.style.opacity='0.35';
+      update();
+    }
   },
+  /* Step 4 — brackets and hints */
   {
     title:'Brackets & hints',
-    desc:'Every puzzle includes <strong style="color:#EAF2FF">brackets</strong> — small 2×2 zones with their own E or O goal. Stuck? Tap 💡 for a hint (you get 3).',
+    desc:'Every puzzle includes <strong style="color:#EAF2FF">brackets</strong> — small 2×2 zones with their own E or O goal, just like rows and columns. Stuck? Tap 💡 for a hint (you get 3).',
     visual:`<div style="display:flex;align-items:center;gap:24px">
       <div style="position:relative;padding:8px">
         <div style="display:grid;grid-template-columns:repeat(2,40px);gap:4px">
-          <div class="tt o" style="width:40px;height:40px;font-size:18px">1</div>
+          <div class="tt o"  style="width:40px;height:40px;font-size:18px">1</div>
           <div class="tt lk" style="width:40px;height:40px;font-size:18px">0</div>
           <div class="tt lk" style="width:40px;height:40px;font-size:18px">0</div>
-          <div class="tt o" style="width:40px;height:40px;font-size:18px">1</div>
+          <div class="tt o"  style="width:40px;height:40px;font-size:18px">1</div>
         </div>
         <div style="position:absolute;top:2px;left:2px;width:13px;height:13px;border-top:2.5px solid #FF6B6B;border-left:2.5px solid #FF6B6B;border-radius:4px 0 0 0"></div>
         <div style="position:absolute;top:2px;right:2px;width:13px;height:13px;border-top:2.5px solid #FF6B6B;border-right:2.5px solid #FF6B6B;border-radius:0 4px 0 0"></div>
@@ -1367,12 +1409,18 @@ let tutStep=0;
 function tutRender(){
   const s=TUT_STEPS[tutStep];
   document.getElementById('tut-title').textContent=s.title;
-  document.getElementById('tut-visual').innerHTML=s.visual;
+  const vis=document.getElementById('tut-visual');
+  vis.innerHTML=s.visual;
   document.getElementById('tut-desc').innerHTML=s.desc;
   document.getElementById('tut-step-label').textContent=`STEP ${tutStep+1} OF ${TUT_STEPS.length}`;
-  document.getElementById('tut-next').textContent=tutStep===TUT_STEPS.length-1?'Play! →':'Next →';
+  const btn=document.getElementById('tut-next');
+  btn.textContent=tutStep===TUT_STEPS.length-1?'Play! \u2192':'Next \u2192';
+  btn.disabled=false;btn.style.opacity='';
   const dots=document.getElementById('tut-dots');dots.innerHTML='';
   TUT_STEPS.forEach((_,i)=>{const d=document.createElement('div');d.className='tdot'+(i===tutStep?' on':'');dots.appendChild(d);});
+  /* Run any step-specific interactive setup AFTER innerHTML is set
+     so IDs like tut-itile are present in the DOM before we query them. */
+  if(s.setup)s.setup(vis);
 }
 function tutNext(){
   if(tutStep<TUT_STEPS.length-1){tutStep++;tutRender();}else tutSkip();
