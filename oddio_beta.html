@@ -93,17 +93,17 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .bbl{font-size:9px;color:rgba(234,242,255,.35);margin-top:1px}
 #mvcnt{font-size:24px;font-weight:500}
 #tmcnt{font-size:20px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.3px;color:#EAF2FF}
-#game-area{position:relative;overflow:hidden;background:#0C1523;border-radius:14px;padding:8px}
+#game-area{position:relative;overflow:hidden;background:#0C1523;border-radius:14px;padding:8px 8px 24px}
 /* Win overlay — full coverage, game-area clips it to rounded shape */
 #win{display:none;position:absolute;inset:0;background:#070D18;flex-direction:column;align-items:center;justify-content:center;gap:0;z-index:30}
 #win.show{display:flex}
 /* When real board is revealed, hide overlay entirely */
 #win.board-revealed{display:none}
 /* Slim banner shown instead when board is revealed */
-#win-banner{display:none;position:absolute;top:0;left:0;right:0;z-index:31;
-  background:rgba(7,13,24,.96);border-radius:0;
+#win-banner{display:none;position:absolute;bottom:0;left:0;right:0;z-index:31;
+  background:#070D18;border-radius:0 0 14px 14px;
   padding:7px 10px;flex-direction:column;align-items:center;gap:5px;
-  border-bottom:1px solid rgba(255,255,255,.07)}
+  border-top:1px solid rgba(255,255,255,.07)}
 #win-banner.show{display:flex}
 #win-banner-title{font-size:12px;font-weight:600;color:#EAF2FF;letter-spacing:.5px}
 #win-banner-mv{font-size:11px;color:#4DA3FF;font-weight:500}
@@ -116,7 +116,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 #banner-nxt-btn{background:#4DA3FF;color:#071018}
 #banner-nxt-btn:active{transform:scale(.96)}
 /* Card wraps all win UI */
-#win-card{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 14px}
+#win-card{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 14px}
 #win-card h2{font-size:20px;font-weight:600;margin:0;letter-spacing:1px}
 #win-sub{font-size:10px;color:rgba(234,242,255,.4);text-align:center;line-height:1.5;margin:0}
 #win .mv{font-size:12px;color:#4DA3FF;font-weight:500}
@@ -248,7 +248,6 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
   <div id="win">
     <div id="win-card">
       <h2>✓ Solved</h2>
-      <div id="win-sub">All rows, columns &amp; subgrids match their parity.</div>
       <div class="mv" id="winmv"></div>
       <div id="win-par"></div>
       <div id="win-board"></div>
@@ -1361,12 +1360,12 @@ const TUT_STEPS=[
         tile.style.cssText='width:46px;height:46px;font-size:22px;cursor:pointer';
         if(ok){
           ind.className='tind o sat';
-          fb.textContent=`${sum} ones makes the row odd \u2713`;
+          fb.textContent=`1 + 1 + 1 = 3 which is an odd number \u2713`;
           fb.style.color='rgba(76,217,100,.9)';
           btn.disabled=false;btn.style.opacity='';
         } else {
           ind.className='tind o';
-          fb.textContent=`${sum} ones — this row currently sums to an even number\u2717`;
+          fb.textContent=`1 + 1 = 2 which is an even number \u2717`;
           fb.style.color='rgba(255,107,107,.5)';
           btn.disabled=true;btn.style.opacity='0.35';
         }
