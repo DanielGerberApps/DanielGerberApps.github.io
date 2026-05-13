@@ -213,6 +213,26 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 /* Green = already correct, orange = needs to change */
 .tile .sol-ov.correct{background:rgba(76,217,100,.25);color:#4CD964;border:1.5px solid rgba(76,217,100,.5)}
 .tile .sol-ov.wrong{background:rgba(255,149,0,.25);color:#FF9500;border:1.5px solid rgba(255,149,0,.5)}
+/* ── Archive modal — list of past puzzles ─────────────────
+   Full-overlay sheet so it works on mobile too. Grid of buttons,
+   each one a past puzzle. Status: solved (green check), today
+   (highlighted), unsolved (default). Tap to load.            */
+#archive{display:none;position:fixed;inset:0;background:rgba(7,13,24,.96);z-index:50;flex-direction:column;align-items:center;padding:20px;overflow-y:auto}
+#archive.show{display:flex}
+#archive-header{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:420px;margin-bottom:14px}
+#archive-title{font-size:15px;font-weight:600;color:#EAF2FF;letter-spacing:2px}
+#archive-close{padding:5px 12px;border-radius:7px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:rgba(234,242,255,.7);font-size:12px;cursor:pointer}
+#archive-close:hover{color:#EAF2FF;border-color:rgba(255,255,255,.3)}
+#archive-sub{font-size:10px;color:rgba(234,242,255,.45);text-align:center;letter-spacing:.5px;margin-bottom:14px;max-width:380px;line-height:1.5}
+#archive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;width:100%;max-width:420px}
+.apz{aspect-ratio:1;border-radius:9px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:rgba(234,242,255,.55);font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .15s;padding:4px}
+.apz:hover{border-color:rgba(255,255,255,.2);color:#EAF2FF}
+.apz .apz-d{font-size:8px;color:rgba(234,242,255,.35);letter-spacing:.3px}
+.apz.solved{background:rgba(76,217,100,.10);border-color:rgba(76,217,100,.35);color:#4CD964}
+.apz.solved .apz-d{color:rgba(76,217,100,.45)}
+.apz.today{border-color:#4DA3FF;color:#4DA3FF;box-shadow:0 0 10px rgba(77,163,255,.25)}
+.apz.today.solved{border-color:#4CD964;box-shadow:0 0 10px rgba(76,217,100,.25)}
+.apz .apz-c{font-size:9px;color:rgba(76,217,100,.7);margin-top:1px}
 </style>
 </head>
 <body>
@@ -221,6 +241,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
     <div><div id="logo"><span class="dot-o blue-dot">O</span>DDI<span class="dot-o orange-dot">O</span></div><div id="tagline">Oddly Addicting</div></div>
     <div id="hdr-right">
       <div id="lvllbl">Loading…</div>
+      <button class="dbt" id="archive-btn" onclick="openArchive()">📅 Archive</button>
       <button class="dbt" onclick="tutStep=0; tutRender(); document.getElementById('tut').classList.add('show');">❓ Help</button>
     </div>
   </div>
@@ -256,6 +277,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
       <div id="share-toast"></div>
       <div id="win-btns">
         <button id="toggle-board" onclick="toggleWinBoard()">Show Board 👁</button>
+        <button id="win-archive-btn" onclick="openArchive()">📅 Archive</button>
         <button id="share-btn" onclick="shareWin()">Share 🔗</button>
       </div>
       <div id="win-countdown">Next puzzle in —</div>
@@ -269,6 +291,15 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
       <button id="banner-share-btn" onclick="shareWin()">Share 🔗</button>
     </div>
   </div>
+  </div>
+  <!-- ── Archive overlay — past-puzzle picker ── -->
+  <div id="archive">
+    <div id="archive-header">
+      <div id="archive-title">📅 ARCHIVE</div>
+      <button id="archive-close" onclick="closeArchive()">Close ✕</button>
+    </div>
+    <div id="archive-sub">Play any past puzzle you haven't beaten. Only today's puzzle counts toward your streak.</div>
+    <div id="archive-grid"></div>
   </div>
   <!-- ── Tutorial overlay ── -->
   <div id="tut">
@@ -875,15 +906,21 @@ function doWin(){
   /* Persist this solve to localStorage BEFORE the win UI populates,
      so a reload mid-celebration still restores cleanly. We also
      update the streak object here (recordSolve is idempotent for
-     the same date — replays in the same day don't double-count).  */
-  saveDailyRec({
+     the same date — replays in the same day don't double-count).
+     STREAK RULE: only today's puzzle counts toward the streak.
+     Archive solves are saved to history but never call recordSolve. */
+  const snapshot={
     date:todayKey(),puzzleNum:puzzleNum,solved:true,
     moves:st.moves,timeMs:st.solveTime,hintsUsed:3-hintCharges,minMoves:st.minMoves,
     vals:[...st.vals],startVals:[...st.startVals],solVals:[...st.solVals],
     locked:[...st.locked],rp:[...st.rp],cp:[...st.cp],
     sgs:st.sgs.map(sg=>[...sg])
-  });
-  recordSolve();
+  };
+  saveSolveToHistory(puzzleNum,snapshot);
+  if(puzzleNum===todayPuzzleNum()){
+    saveDailyRec(snapshot);   // keep legacy key in sync for current-day reloads
+    recordSolve();
+  }
   document.querySelectorAll('.tile').forEach((el,i)=>{
     setTimeout(()=>{
       el.style.transition='transform .14s,border-color .22s';
@@ -1060,7 +1097,8 @@ function build(){
    GF(2) generator algorithm, and you get matching puzzles.
    PlayerPrefs replaces localStorage with no behavioural change. */
 const EPOCH_Y=2026, EPOCH_M=4 /* May, 0-indexed */, EPOCH_D=8;  // puzzle #1 = launch day
-const DAILY_KEY='oddio_daily';
+const DAILY_KEY='oddio_daily';        // legacy: today-only snapshot (migrated on load)
+const HISTORY_KEY='oddio_history';    // new: { [puzzleNum]: snapshot } — every solved puzzle
 const STREAK_KEY='oddio_streak';
 
 function todayKey(){
@@ -1098,6 +1136,35 @@ function fmtCountdown(ms){
 
 function loadDailyRec(){try{return JSON.parse(localStorage.getItem(DAILY_KEY)||'null');}catch(e){return null;}}
 function saveDailyRec(o){try{localStorage.setItem(DAILY_KEY,JSON.stringify(o));}catch(e){}}
+
+/* History map: { [puzzleNum]: {date, moves, minMoves, timeMs, hintsUsed,
+   vals, startVals, solVals, locked, rp, cp, sgs, solved:true} }
+   Storing the full board snapshot per puzzle means archive replays
+   restore exactly like today's reload path — same code, no special
+   case. Keyed by puzzleNum (not date) so the archive is stable
+   regardless of timezone or DST shifts.                          */
+function loadHistory(){
+  try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||'{}')||{};}
+  catch(e){return {};}
+}
+function saveHistory(h){try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch(e){}}
+function getHistoryEntry(num){return loadHistory()[num]||null;}
+function saveSolveToHistory(num,rec){
+  const h=loadHistory();h[num]=rec;saveHistory(h);
+}
+
+/* Migrate legacy oddio_daily → oddio_history. Runs once on load.
+   Idempotent: if HISTORY_KEY already has this puzzleNum, skip.
+   We DON'T delete oddio_daily — leave it for one more release as
+   a safety net in case a user downgrades.                        */
+function migrateDailyToHistory(){
+  const rec=loadDailyRec();
+  if(!rec||!rec.solved||!rec.puzzleNum)return;
+  const h=loadHistory();
+  if(h[rec.puzzleNum])return;  // already migrated
+  h[rec.puzzleNum]=rec;
+  saveHistory(h);
+}
 function loadStreak(){
   const empty={current:0,max:0,lastSolvedDate:null,lastPlayedDate:null,played:0,solved:0};
   try{return JSON.parse(localStorage.getItem(STREAK_KEY)||'null')||empty;}
@@ -1130,7 +1197,20 @@ function recordSolve(){
 }
 
 function updateHeaderLabel(){
-  document.getElementById('lvllbl').textContent=`#${puzzleNum} · ${shortDate()}`;
+  const today=todayPuzzleNum();
+  const lbl=document.getElementById('lvllbl');
+  if(puzzleNum===today){
+    lbl.textContent=`#${puzzleNum} · ${shortDate()}`;
+    lbl.style.color='';
+  } else {
+    /* Archive view: show puzzle number + its actual date (derived
+       from epoch + puzzleNum offset), and a subtle color cue.    */
+    const e=new Date(EPOCH_Y,EPOCH_M,EPOCH_D);
+    e.setDate(e.getDate()+(puzzleNum-1));
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    lbl.textContent=`#${puzzleNum} · ${months[e.getMonth()]} ${e.getDate()} · 📅`;
+    lbl.style.color='#4DA3FF';
+  }
 }
 
 /* Populates the win overlay from the current st. Used both for
@@ -1148,7 +1228,14 @@ function showWinUI(){
   buildWinBoard();
   const s=loadStreak();
   const streakEl=document.getElementById('win-streak');
-  if(s.current>0){
+  const isToday=(puzzleNum===todayPuzzleNum());
+  if(!isToday){
+    /* Archive solve — don't show streak fire (didn't earn one).
+       Show that they cleared a past puzzle, plus current streak
+       for context so they know it wasn't affected.            */
+    streakEl.classList.remove('empty');
+    streakEl.innerHTML=`📅 Archive puzzle solved · current streak <strong>${s.current||0}</strong>`;
+  } else if(s.current>0){
     streakEl.classList.remove('empty');
     streakEl.innerHTML=`🔥 <strong>${s.current}</strong> day streak · best <strong>${s.max}</strong>`;
   } else {
@@ -1184,16 +1271,32 @@ function startCountdown(){
   _countdownTimer=setInterval(tick,1000);
 }
 
-/* Main entry: pick today's puzzle, restore prior solve if any,
-   otherwise generate fresh. Replaces the old per-level load().  */
-function loadDaily(){
-  puzzleNum=todayPuzzleNum();
+/* Main entry: load a specific puzzle by number. Restores the
+   solved snapshot if it exists in history, otherwise generates
+   fresh from the deterministic seed. Works for today AND any
+   past puzzle from the archive — same code path.
+   bumpPlayedIfNewDay() only fires when loading today's puzzle,
+   so archive loads don't pollute the "played today" stat.       */
+function loadPuzzle(num){
+  puzzleNum=num;
+  /* Clear any leftover win/celebration UI from a previous puzzle.
+     build() rebuilds tiles fresh so per-tile styles are fine, but
+     the overlay divs persist between puzzles.                     */
+  document.getElementById('win').classList.remove('show','board-revealed');
+  document.getElementById('win-banner').classList.remove('show');
+  const isToday=(num===todayPuzzleNum());
+  if(isToday)bumpPlayedIfNewDay();
   updateHeaderLabel();
-  bumpPlayedIfNewDay();
-  const rec=loadDailyRec();
-  const today=todayKey();
-  if(rec&&rec.date===today&&rec.solved){
-    /* Returning visitor on a day they've already solved.
+  /* Look up in history first; fall back to legacy oddio_daily
+     for today only (covers the edge case where migration somehow
+     didn't run — e.g. first load after upgrade with storage error). */
+  let rec=getHistoryEntry(num);
+  if(!rec&&isToday){
+    const legacy=loadDailyRec();
+    if(legacy&&legacy.date===todayKey()&&legacy.solved&&legacy.puzzleNum===num)rec=legacy;
+  }
+  if(rec&&rec.solved){
+    /* Returning visitor on a puzzle they've already solved.
        Reconstitute st from the saved snapshot, render the
        static board (so "Show Board" toggle has something to
        reveal), then jump straight to the win UI.            */
@@ -1226,13 +1329,60 @@ function loadDaily(){
     });
     showWinUI();
   } else {
-    // Fresh puzzle for today. Same seed formula as the old level
-    // system so the generator's well-tested seed range is reused.
-    const seed=puzzleNum*997+42;
+    // Fresh puzzle. Same seed formula as the old level system so
+    // the generator's well-tested seed range is reused. Works for
+    // any puzzleNum — today, past, or (in theory) future.
+    const seed=num*997+42;
     initSt(generate(seed));
     build();
   }
   startCountdown();
+}
+
+/* Today wrapper — preserves the original loadDaily() entrypoint
+   so the boot sequence at the bottom of the file is unchanged.   */
+function loadDaily(){
+  migrateDailyToHistory();
+  loadPuzzle(todayPuzzleNum());
+}
+
+/* ── Archive UI ───────────────────────────────────────────────
+   Renders puzzles 1..today as a grid of buttons. Each one shows
+   puzzle number, date, and solved status. Tap to load — closes
+   the modal and jumps into loadPuzzle(n). The grid renders newest
+   first (today on top) because that's where most players want
+   to start their backlog.                                        */
+function openArchive(){
+  renderArchive();
+  document.getElementById('archive').classList.add('show');
+}
+function closeArchive(){
+  document.getElementById('archive').classList.remove('show');
+}
+function renderArchive(){
+  const grid=document.getElementById('archive-grid');
+  grid.innerHTML='';
+  const today=todayPuzzleNum();
+  const history=loadHistory();
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  /* Build top-down: today first, then yesterday, etc. We compute
+     each puzzle's date from the epoch rather than storing it, so
+     the archive is always correct regardless of when puzzles were
+     played.                                                       */
+  const frag=document.createDocumentFragment();
+  for(let n=today;n>=1;n--){
+    const e=new Date(EPOCH_Y,EPOCH_M,EPOCH_D);
+    e.setDate(e.getDate()+(n-1));
+    const dateStr=`${months[e.getMonth()]} ${e.getDate()}`;
+    const solved=!!(history[n]&&history[n].solved);
+    const isToday=(n===today);
+    const btn=document.createElement('button');
+    btn.className='apz'+(solved?' solved':'')+(isToday?' today':'');
+    btn.innerHTML=`<div>#${n}</div><div class="apz-d">${dateStr}</div>`+(solved?'<div class="apz-c">✓</div>':'');
+    btn.onclick=()=>{closeArchive();loadPuzzle(n);};
+    frag.appendChild(btn);
+  }
+  grid.appendChild(frag);
 }
 
 /* ── Debug ───────────────────────────────────────────────────
