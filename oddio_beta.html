@@ -105,7 +105,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
   padding:7px 10px;flex-direction:column;align-items:center;gap:5px;
   border-top:1px solid rgba(255,255,255,.07)}
 #win-banner.show{display:flex}
-#win-banner-title{font-size:12px;font-weight:600;color:#EAF2FF;letter-spacing:.5px}
+#win-banner-title{font-size:12px;font-weight:600;color:#4CD964;letter-spacing:.5px}
 #win-banner-mv{font-size:11px;color:#4DA3FF;font-weight:500}
 #win-banner-btns{display:flex;gap:6px}
 #win-banner-btns button{border-radius:8px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;border:none}
@@ -117,7 +117,11 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 #banner-nxt-btn:active{transform:scale(.96)}
 /* Card wraps all win UI */
 #win-card{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 14px}
-#win-card h2{font-size:20px;font-weight:600;margin:0;letter-spacing:1px}
+#win-card h2{font-size:20px;font-weight:600;margin:0;letter-spacing:1px;color:#4CD964}
+/* #winmv carries the final time as the headline — overrides the
+   smaller .mv base style. Big blue tabular number for easy
+   comparison; the small win-par line below shows the breakdown. */
+#winmv{font-size:28px;font-weight:700;color:#4DA3FF;letter-spacing:1px;line-height:1.1;font-variant-numeric:tabular-nums}
 #win-sub{font-size:10px;color:rgba(234,242,255,.4);text-align:center;line-height:1.5;margin:0}
 #win .mv{font-size:12px;color:#4DA3FF;font-weight:500}
 #win-par{font-size:11px;color:rgba(234,242,255,.5);font-weight:500;letter-spacing:.2px;margin-top:-3px}
@@ -237,6 +241,160 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .apz.today{border-color:#4DA3FF;color:#4DA3FF;box-shadow:0 0 10px rgba(77,163,255,.25)}
 .apz.today.solved{border-color:#4CD964;box-shadow:0 0 10px rgba(76,217,100,.25)}
 .apz .apz-c{font-size:9px;color:rgba(76,217,100,.7);margin-top:1px}
+
+/* ── Challenge mode ────────────────────────────────────────────
+   A second game mode where the player generates a one-off puzzle
+   and shares it with a friend to compete on solve time. Visually
+   distinct from daily mode via a purple accent (#B388FF) so the
+   player always knows which mode they're in. State lives entirely
+   in the URL hash — no server.                                   */
+.dbt.cz-btn{
+  color:rgba(179,136,255,.75);
+  border-color:rgba(179,136,255,.25);
+  background:rgba(179,136,255,.06);
+}
+.dbt.cz-btn:hover{
+  color:#B388FF;
+  border-color:rgba(179,136,255,.5);
+}
+
+/* Sticky "you are in challenge mode" banner. Sits between header
+   and game area so it never overlaps the board or controls.       */
+#cz-banner{
+  display:none;align-items:center;justify-content:space-between;
+  background:rgba(179,136,255,.10);
+  border:1px solid rgba(179,136,255,.30);
+  border-radius:9px;
+  padding:6px 9px;margin-bottom:8px;
+  font-size:10px;color:#B388FF;letter-spacing:.4px;
+}
+#cz-banner.show{display:flex}
+#cz-banner-text{display:flex;flex-direction:column;gap:1px}
+#cz-banner-title{font-weight:700;letter-spacing:1px;font-size:9px;text-transform:uppercase}
+#cz-banner-sub{color:rgba(234,242,255,.55);font-size:10px;letter-spacing:.2px}
+#cz-banner-exit{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  color:rgba(234,242,255,.75);
+  border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;
+}
+#cz-banner-exit:active{transform:scale(.96)}
+
+/* Create-challenge modal — shown when the player taps ⚔️ in the
+   header. Same layout language as the tutorial overlay so it
+   feels native, not bolted on.                                    */
+#cz-create{
+  display:none;position:absolute;inset:0;
+  background:#0C1523;border-radius:16px;z-index:60;
+  flex-direction:column;align-items:center;justify-content:space-between;
+  padding:22px 20px 18px;
+}
+#cz-create.show{display:flex}
+#cz-create-header{width:100%;display:flex;justify-content:space-between;align-items:center}
+#cz-create-label{font-size:10px;color:rgba(179,136,255,.6);letter-spacing:1.5px;font-weight:600}
+#cz-create-close{background:none;border:none;color:rgba(234,242,255,.3);font-size:11px;cursor:pointer;padding:4px 8px;border-radius:6px}
+#cz-create-close:hover{color:rgba(234,242,255,.6)}
+#cz-create-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:10px 0;width:100%}
+#cz-create-title{font-size:20px;font-weight:700;letter-spacing:.5px;color:#EAF2FF}
+#cz-create-title .ic{color:#B388FF}
+#cz-create-desc{font-size:12px;color:rgba(234,242,255,.55);line-height:1.6;max-width:260px}
+#cz-create-desc strong{color:#B388FF;font-weight:600}
+#cz-name-wrap{width:100%;max-width:240px;display:flex;flex-direction:column;gap:5px;text-align:left}
+#cz-name-label{font-size:9px;color:rgba(234,242,255,.4);letter-spacing:1.2px;font-weight:600;text-transform:uppercase}
+#cz-name-input{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.12);
+  color:#EAF2FF;
+  border-radius:9px;padding:9px 11px;font-size:13px;
+  font-family:inherit;outline:none;transition:border-color .15s;
+}
+#cz-name-input:focus{border-color:rgba(179,136,255,.6)}
+#cz-name-input::placeholder{color:rgba(234,242,255,.25)}
+#cz-create-go{
+  background:#B388FF;color:#1A0D33;border:none;border-radius:11px;
+  padding:12px 36px;font-size:14px;font-weight:700;cursor:pointer;
+  width:100%;max-width:240px;transition:opacity .2s;letter-spacing:.4px;
+}
+#cz-create-go:active{transform:scale(.97)}
+
+/* Receive-challenge intro — shown when the page loads with an
+   #oc=... fragment. Tells the player who challenged them and
+   how fast their target time is, with a single "Play" CTA.       */
+#cz-intro{
+  display:none;position:absolute;inset:0;
+  background:#0C1523;border-radius:16px;z-index:61;
+  flex-direction:column;align-items:center;justify-content:space-between;
+  padding:22px 20px 18px;
+}
+#cz-intro.show{display:flex}
+#cz-intro-header{width:100%;display:flex;justify-content:space-between;align-items:center}
+#cz-intro-label{font-size:10px;color:rgba(179,136,255,.6);letter-spacing:1.5px;font-weight:600}
+#cz-intro-skip{background:none;border:none;color:rgba(234,242,255,.3);font-size:11px;cursor:pointer;padding:4px 8px;border-radius:6px}
+#cz-intro-skip:hover{color:rgba(234,242,255,.6)}
+#cz-intro-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:10px 0;width:100%}
+#cz-intro-title{font-size:22px;font-weight:700;letter-spacing:.5px;color:#EAF2FF}
+#cz-intro-from{font-size:13px;color:rgba(234,242,255,.6);line-height:1.5;max-width:260px}
+#cz-intro-from strong{color:#B388FF;font-weight:600}
+#cz-intro-target{
+  background:rgba(179,136,255,.10);
+  border:1px solid rgba(179,136,255,.30);
+  border-radius:12px;padding:11px 18px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  margin-top:4px;
+}
+#cz-intro-target-lbl{font-size:9px;color:rgba(179,136,255,.7);letter-spacing:1.3px;font-weight:600;text-transform:uppercase}
+#cz-intro-target-val{font-size:26px;font-weight:700;color:#B388FF;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+#cz-intro-play{
+  background:#B388FF;color:#1A0D33;border:none;border-radius:11px;
+  padding:12px 36px;font-size:14px;font-weight:700;cursor:pointer;
+  width:100%;max-width:240px;letter-spacing:.4px;
+}
+#cz-intro-play:active{transform:scale(.97)}
+
+/* Win UI variant for challenges. Reuses the existing #win
+   container but conditionally hides streak / countdown / archive
+   bits and slots in challenge-specific lines.                    */
+#win.challenge h2{color:#B388FF}
+#win.challenge #winmv{color:#B388FF}
+#win.challenge.beat h2{color:#4CD964}
+#win.challenge.beat #winmv{color:#4CD964}
+#win.challenge.lost h2{color:#FF9500}
+#win.challenge.lost #winmv{color:#FF9500}
+/* Versus block — head-to-head time comparison */
+#cz-vs{
+  display:none;flex-direction:column;align-items:center;gap:6px;
+  background:rgba(179,136,255,.08);
+  border:1px solid rgba(179,136,255,.25);
+  border-radius:10px;padding:10px 14px;margin-top:4px;
+  font-variant-numeric:tabular-nums;min-width:180px;
+}
+#win.challenge.has-vs #cz-vs{display:flex}
+.cz-vs-row{display:flex;justify-content:space-between;width:100%;font-size:13px;gap:14px}
+.cz-vs-row .lbl{color:rgba(234,242,255,.55)}
+.cz-vs-row .val{color:#EAF2FF;font-weight:600;letter-spacing:.3px}
+.cz-vs-row.me .lbl{color:#B388FF;font-weight:600}
+.cz-vs-row.me .val{color:#B388FF;font-weight:700}
+#cz-vs-verdict{font-size:11px;font-weight:600;letter-spacing:.5px;text-align:center;margin-top:2px;text-transform:uppercase}
+#win.challenge.beat #cz-vs-verdict{color:#4CD964}
+#win.challenge.lost #cz-vs-verdict{color:#FF9500}
+#win.challenge.tied #cz-vs-verdict{color:#FFD60A}
+/* Hide daily-only chrome in challenge mode */
+#win.challenge #win-streak,
+#win.challenge #win-stats,
+#win.challenge #win-countdown,
+#win.challenge #win-archive-btn{display:none}
+/* "Send / Play again / Daily" challenge-mode buttons */
+#cz-win-btns{display:none;gap:7px;margin-top:6px;flex-wrap:wrap;justify-content:center}
+#win.challenge #cz-win-btns{display:flex}
+#win.challenge #win-btns{display:none}
+.cz-action{
+  border-radius:10px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;
+  border:1px solid transparent;letter-spacing:.2px;
+}
+.cz-action:active{transform:scale(.97)}
+.cz-action.primary{background:#B388FF;color:#1A0D33;border-color:#B388FF}
+.cz-action.secondary{background:rgba(255,255,255,.06);color:rgba(234,242,255,.55);border-color:rgba(255,255,255,.1)}
+.cz-action.daily{background:rgba(77,163,255,.12);color:#4DA3FF;border-color:rgba(77,163,255,.35)}
 </style>
 </head>
 <body>
@@ -245,8 +403,17 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
     <div><div id="logo"><span class="dot-o blue-dot">O</span>DDI<span class="dot-o orange-dot">O</span></div><div id="tagline">Oddly Addicting</div></div>
     <div id="hdr-right">
       <div id="lvllbl">Loading…</div>
+      <button class="dbt cz-btn" onclick="openChallengeCreate()" title="Challenge a friend">⚔️</button>
       <button class="dbt" onclick="tutStep=0; tutRender(); document.getElementById('tut').classList.add('show');">❓ Help</button>
     </div>
+  </div>
+  <!-- Challenge-mode banner — only visible during a challenge -->
+  <div id="cz-banner">
+    <div id="cz-banner-text">
+      <span id="cz-banner-title">⚔️ CHALLENGE</span>
+      <span id="cz-banner-sub"></span>
+    </div>
+    <button id="cz-banner-exit" onclick="exitChallenge()">Exit ✕</button>
   </div>
   <div id="msg">Tap a tile to flip its value</div>
   <div id="game-area">
@@ -271,10 +438,15 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 
   <div id="win">
     <div id="win-card">
-      <h2>✓ Solved</h2>
+      <h2>Solved</h2>
       <div class="mv" id="winmv"></div>
       <div id="win-par"></div>
       <div id="win-board"></div>
+      <div id="cz-vs">
+        <div class="cz-vs-row" id="cz-vs-them"><span class="lbl"></span><span class="val"></span></div>
+        <div class="cz-vs-row me"><span class="lbl">You</span><span class="val" id="cz-vs-me-val"></span></div>
+        <div id="cz-vs-verdict"></div>
+      </div>
       <div id="win-streak"></div>
       <div id="win-stats"></div>
       <div id="share-toast"></div>
@@ -283,11 +455,16 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
         <button id="win-archive-btn" onclick="openArchive()">📅 Archive</button>
         <button id="share-btn" onclick="shareWin()">Share 🔗</button>
       </div>
+      <div id="cz-win-btns">
+        <button class="cz-action primary" id="cz-share-btn" onclick="shareChallenge()">Share Link 🔗</button>
+        <button class="cz-action secondary" onclick="openChallengeCreate()">New Challenge ⚔️</button>
+        <button class="cz-action daily" onclick="exitChallenge()">Back to Daily</button>
+      </div>
       <div id="win-countdown">Next puzzle in —</div>
     </div>
   </div>
   <div id="win-banner">
-    <div id="win-banner-title">✓ Solved</div>
+    <div id="win-banner-title">Solved</div>
     <div id="win-banner-mv"></div>
     <div id="win-banner-btns">
       <button id="hide-board-btn" onclick="toggleWinBoard()">Hide Board 👁</button>
@@ -303,6 +480,41 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
     </div>
     <div id="archive-sub">Play any past puzzle you haven't beaten. Only today's puzzle counts toward your streak.</div>
     <div id="archive-grid"></div>
+  </div>
+  <!-- ── Challenge create modal — sender flow ── -->
+  <div id="cz-create">
+    <div id="cz-create-header">
+      <span id="cz-create-label">⚔️ CREATE CHALLENGE</span>
+      <button id="cz-create-close" onclick="closeChallengeCreate()">Close ✕</button>
+    </div>
+    <div id="cz-create-body">
+      <div id="cz-create-title">Challenge a <span class="ic">friend</span></div>
+      <div id="cz-create-desc">
+        Generate a <strong>one-off puzzle</strong> that will never appear as a daily.
+        Solve it first to set your time, then share the link with a friend.
+      </div>
+      <div id="cz-name-wrap">
+        <label id="cz-name-label" for="cz-name-input">Your name (optional)</label>
+        <input id="cz-name-input" type="text" maxlength="14" placeholder="e.g. Alice" autocomplete="off">
+      </div>
+      <button id="cz-create-go" onclick="startNewChallenge()">Generate &amp; Play →</button>
+    </div>
+  </div>
+  <!-- ── Challenge intro modal — receiver flow ── -->
+  <div id="cz-intro">
+    <div id="cz-intro-header">
+      <span id="cz-intro-label">⚔️ CHALLENGE RECEIVED</span>
+      <button id="cz-intro-skip" onclick="declineChallenge()">Skip →</button>
+    </div>
+    <div id="cz-intro-body">
+      <div id="cz-intro-title">You've been challenged</div>
+      <div id="cz-intro-from"></div>
+      <div id="cz-intro-target">
+        <span id="cz-intro-target-lbl">Time to beat</span>
+        <span id="cz-intro-target-val">—</span>
+      </div>
+    </div>
+    <button id="cz-intro-play" onclick="acceptChallenge()">Accept &amp; Play →</button>
   </div>
   <!-- ── Tutorial overlay ── -->
   <div id="tut">
@@ -773,11 +985,32 @@ function updateTimerDisplay(ms){
   const el=document.getElementById('tmcnt');
   if(el)el.textContent=fmtTime(ms);
 }
+
+/* Unified comparison metric: raw solve time plus penalties for
+   each extra move and each hint used. Lower is better, and the
+   unit (time) is one users already understand — no separate
+   scoring system to learn.
+
+     Move penalty: +5s per move over the minimum.
+     Hint penalty: +15s per hint used.
+
+   Pure function of saved fields, so historical solves render
+   their final time identically without any migration.            */
+const MOVE_PENALTY_MS=5000;
+const HINT_PENALTY_MS=15000;
+function computeFinalTimeMs(rawTimeMs,moves,minMoves,hintsUsed){
+  const extraMoves=Math.max(0,(moves|0)-(minMoves|0));
+  const hints=Math.min(3,Math.max(0,hintsUsed|0));
+  return (rawTimeMs||0)+extraMoves*MOVE_PENALTY_MS+hints*HINT_PENALTY_MS;
+}
 function startTimer(){
   if(timerRAF){cancelAnimationFrame(timerRAF);timerRAF=null;}
-  // Defer if the tutorial is currently covering the board —
-  // tutSkip() will call us again once it's dismissed.
-  if(document.getElementById('tut')?.classList.contains('show')){
+  // Defer if any blocking overlay is currently covering the board —
+  // its dismiss handler will call us again once cleared. We also
+  // wait on the challenge intro so a daily-mode board behind a
+  // receiver intro doesn't accumulate phantom time on decline.
+  if(document.getElementById('tut')?.classList.contains('show')||
+     document.getElementById('cz-intro')?.classList.contains('show')){
     st.timerPending=true;
     updateTimerDisplay(0);
     return;
@@ -996,23 +1229,32 @@ function doWin(){
   // the (unique) solution. Each such tile must flip at least once, and
   // since the solution is unique, this lower bound is exact.
   st.minMoves=st.locked.reduce((s,lk,i)=>s+(!lk&&st.startVals[i]!==st.solVals[i]?1:0),0);
-  /* Persist this solve to localStorage BEFORE the win UI populates,
-     so a reload mid-celebration still restores cleanly. We also
-     update the streak object here (recordSolve is idempotent for
-     the same date — replays in the same day don't double-count).
-     STREAK RULE: only today's puzzle counts toward the streak.
-     Archive solves are saved to history but never call recordSolve. */
-  const snapshot={
-    date:todayKey(),puzzleNum:puzzleNum,solved:true,
-    moves:st.moves,timeMs:st.solveTime,hintsUsed:3-hintCharges,minMoves:st.minMoves,
-    vals:[...st.vals],startVals:[...st.startVals],solVals:[...st.solVals],
-    locked:[...st.locked],rp:[...st.rp],cp:[...st.cp],
-    sgs:st.sgs.map(sg=>[...sg])
-  };
-  saveSolveToHistory(puzzleNum,snapshot);
-  if(puzzleNum===todayPuzzleNum()){
-    saveDailyRec(snapshot);   // keep legacy key in sync for current-day reloads
-    recordSolve();
+  // Pin hints-used onto st so showWinUI/shareWin can read it the
+  // same way whether this is a live solve or a restored snapshot.
+  st.hintsUsed=3-hintCharges;
+  /* Challenge solves are ephemeral — they MUST NOT touch the daily
+     history, streak, or "puzzles played today" counter. The URL hash
+     is the only persistence layer; that's the entire point of the
+     serverless design.                                              */
+  if(!st.isChallenge){
+    /* Persist this solve to localStorage BEFORE the win UI populates,
+       so a reload mid-celebration still restores cleanly. We also
+       update the streak object here (recordSolve is idempotent for
+       the same date — replays in the same day don't double-count).
+       STREAK RULE: only today's puzzle counts toward the streak.
+       Archive solves are saved to history but never call recordSolve. */
+    const snapshot={
+      date:todayKey(),puzzleNum:puzzleNum,solved:true,
+      moves:st.moves,timeMs:st.solveTime,hintsUsed:3-hintCharges,minMoves:st.minMoves,
+      vals:[...st.vals],startVals:[...st.startVals],solVals:[...st.solVals],
+      locked:[...st.locked],rp:[...st.rp],cp:[...st.cp],
+      sgs:st.sgs.map(sg=>[...sg])
+    };
+    saveSolveToHistory(puzzleNum,snapshot);
+    if(puzzleNum===todayPuzzleNum()){
+      saveDailyRec(snapshot);   // keep legacy key in sync for current-day reloads
+      recordSolve();
+    }
   }
   document.querySelectorAll('.tile').forEach((el,i)=>{
     setTimeout(()=>{
@@ -1021,7 +1263,7 @@ function doWin(){
       setTimeout(()=>el.style.transform='scale(1)',160);
     },i*30);
   });
-  setTimeout(showWinUI,N*N*30+260);
+  setTimeout(st.isChallenge?showChallengeWinUI:showWinUI,N*N*30+260);
 }
 
 /* ── Win board preview ───────────────────────────────────── */
@@ -1100,13 +1342,16 @@ function shareWin(){
     grid+='\n';
   }
   /* Wordle-style daily share: puzzle number + date so receivers
-     instantly know which puzzle is being talked about. Streak
-     line is included only when current >0 to avoid the noisy
-     "🔥 0 day streak" on a first solve.                       */
+     instantly know which puzzle is being talked about. Final
+     time is the headline metric for cross-friend comparison.
+     Streak line is included only when current >0 to avoid the
+     noisy "🔥 0 day streak" on a first solve.                    */
   const s=loadStreak();
   const streakLine=s.current>0?`🔥 ${s.current} day streak\n`:'';
   const perfMark=st.moves===minMoves?' 🎯':'';
-  const text=`Oddio #${puzzleNum} · ${shortDate()}\n${st.moves} move${st.moves!==1?'s':''}${perfMark} (fewest: ${minMoves}) · ⏱️ ${fmtTime(st.solveTime)}\n${streakLine}\n${grid}\nhttps://oddio.game`;
+  const hints=(st.hintsUsed!=null)?st.hintsUsed:(3-hintCharges);
+  const finalTime=computeFinalTimeMs(st.solveTime,st.moves,minMoves,hints);
+  const text=`Oddio #${puzzleNum} · ${shortDate()} · ⏱️ ${fmtTime(finalTime)}\n${fmtTime(st.solveTime)} solve · ${st.moves} move${st.moves!==1?'s':''}${perfMark} (fewest: ${minMoves}) · 💡 ${hints} hint${hints!==1?'s':''}\n${streakLine}\n${grid}\nhttps://oddio.game`;
   const toast=document.getElementById('share-toast');
   const btn=document.getElementById('share-btn');
   navigator.clipboard.writeText(text).then(()=>{
@@ -1312,12 +1557,22 @@ function updateHeaderLabel(){
    solve. Reads streak fresh each time so the displayed numbers
    include any update recordSolve() just made.                  */
 function showWinUI(){
-  document.getElementById('winmv').textContent=
-    `Solved in ${st.moves} move${st.moves!==1?'s':''} · ${fmtTime(st.solveTime)}`;
-  const par=document.getElementById('win-par');
-  par.textContent=st.moves===st.minMoves
-    ?`Solved in the fewest possible moves`
-    :`Fewest possible: ${st.minMoves} move${st.minMoves!==1?'s':''}`;
+  // Hints used — fall back to 0 in the rare case st.hintsUsed
+  // was never set (shouldn't happen post-feature, but safe).
+  const hints=(st.hintsUsed!=null)?st.hintsUsed:(3-hintCharges);
+  const finalMs=computeFinalTimeMs(st.solveTime,st.moves,st.minMoves,hints);
+  // Headline: the final time (with penalties baked in).
+  document.getElementById('winmv').textContent=fmtTime(finalMs);
+  /* Breakdown line — shows the components so the penalty math is
+     transparent. Fewest-moves info is folded in inline (🎯 for
+     perfect, "(fewest: N)" otherwise) so we don't need a separate
+     win-par sentence — saves vertical space.                      */
+  const perfect=st.moves===st.minMoves;
+  const movesPart=perfect
+    ?`${st.moves} move${st.moves!==1?'s':''} 🎯`
+    :`${st.moves} move${st.moves!==1?'s':''} (fewest: ${st.minMoves})`;
+  document.getElementById('win-par').textContent=
+    `${fmtTime(st.solveTime)} solve · ${movesPart} · ${hints} hint${hints!==1?'s':''}`;
   buildWinBoard();
   const s=loadStreak();
   const streakEl=document.getElementById('win-streak');
@@ -1380,6 +1635,13 @@ function startCountdown(){
    so archive loads don't pollute the "played today" stat.       */
 function loadPuzzle(num){
   puzzleNum=num;
+  /* Clear any leftover challenge-mode UI from a prior session.
+     This is the canonical way to re-enter daily mode — every
+     "Back to Daily" path funnels through here.                  */
+  document.getElementById('cz-banner').classList.remove('show');
+  document.getElementById('win').classList.remove('challenge','beat','lost','tied','has-vs');
+  document.getElementById('lvllbl').style.color='';
+  if(_czState){_czState=null;}
   /* Clear any leftover win/celebration UI from a previous puzzle.
      build() rebuilds tiles fresh so per-tile styles are fine, but
      the overlay divs persist between puzzles.                     */
@@ -1410,6 +1672,7 @@ function loadPuzzle(num){
     st.startVals=rec.startVals;
     st.moves=rec.moves;
     st.minMoves=rec.minMoves;
+    st.hintsUsed=rec.hintsUsed||0;  // saved snapshots have this; fallback for any pre-feature records
     build();
     /* IMPORTANT: build() calls startTimer() at the end, which
        sets st.solveTime=null and st.startTime=now. We must
@@ -1450,6 +1713,375 @@ function loadPuzzle(num){
 function loadDaily(){
   migrateDailyToHistory();
   loadPuzzle(todayPuzzleNum());
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ── CHALLENGE MODE ──────────────────────────────────────────
+   ══════════════════════════════════════════════════════════════
+   Players generate a one-off puzzle and share a link with a
+   friend to compete on solve time. Fully serverless — every
+   piece of state lives in the URL hash.
+
+   ─── Why challenge seeds never collide with daily seeds ───
+   Daily seeds are computed as `num*997+42` where num is the
+   1-indexed day count from EPOCH. For 150 years (54,788 days),
+   num*997+42 stays within [1039, 54,623,678] — well below
+   0x80000000 (2,147,483,648). The generator's internal retry
+   bumps the seed by at most +50, so even the worst-case daily
+   trajectory tops out around ~55M, far from bit 31.
+
+   Challenge seeds are picked from [0x80000000, 0xBFFFFFFF].
+   Bit 31 is always set; retries (+1..+50) stay within that
+   range. So daily and challenge namespaces are mathematically
+   disjoint for >150 years, with several billion possible
+   challenge seeds to draw from.
+
+   ─── URL transport ───
+   #oc=<seed-b36>[.<finalTimeMs-b36>[.<encoded-name>]]
+     seed:      base36 of the 32-bit challenge seed (≤7 chars)
+     time:      base36 of challenger's final time in ms (optional)
+     name:      URI-encoded name (optional, max 14 chars)
+   Hash fragments are preserved by every major messaging app,
+   never logged server-side, and require no backend at all.
+
+   ─── Porting to Unity C# (WebGL build) ───
+   The seed scheme is intentionally portable: Unity can read
+   `Application.absoluteURL` (or call window.location.hash via
+   JSLib interop), parse the same `oc=` fragment, and feed the
+   integer seed into the same GF(2) generator algorithm. Hash
+   writes (history.replaceState) likewise work through interop.
+   ══════════════════════════════════════════════════════════════ */
+
+const CZ_BIT=0x80000000;              // hi-bit namespace flag
+const CZ_NAME_KEY='oddio_cz_name';     // last-used author name
+const CZ_ACTIVE_KEY='oddio_cz_active'; // remember the link if user navigates away
+
+/* Pick a fresh challenge seed in [0x80000000, 0xBFFFFFFF].
+   Bit 31 set + only 30 random low bits means the +50 retry
+   inside generate() never crosses 0xC0000000, so we stay well
+   within the challenge namespace. Uses crypto.getRandomValues
+   when available for better distribution; falls back to
+   Math.random in older WebGL embeddings.                       */
+function czNewSeed(){
+  let r;
+  if(window.crypto&&window.crypto.getRandomValues){
+    const buf=new Uint32Array(1);window.crypto.getRandomValues(buf);r=buf[0];
+  }else{
+    r=(Math.random()*0x100000000)>>>0;
+  }
+  // Keep only 30 random bits, then force bit 31. Result is in
+  // [0x80000000, 0xBFFFFFFF] — never collides with daily.
+  return(CZ_BIT|(r&0x3FFFFFFF))>>>0;
+}
+
+/* Encode a challenge into a hash-fragment string. Time and name
+   are independently optional: a seed-only link is a valid "play
+   this puzzle with me" share that doesn't impose a time goal.   */
+function czEncode(seed,finalTimeMs,name){
+  let s='oc='+(seed>>>0).toString(36);
+  if(finalTimeMs!=null&&finalTimeMs>=0)
+    s+='.'+(Math.round(finalTimeMs)|0).toString(36);
+  if(name){
+    // If no time, we still need a separator placeholder so the
+    // name field is positionally unambiguous on parse.
+    if(finalTimeMs==null||finalTimeMs<0)s+='.';
+    s+='.'+encodeURIComponent(name.slice(0,14));
+  }
+  return s;
+}
+
+/* Parse a challenge from either the URL hash or query string.
+   Returns null if no challenge is present, or {seed, timeMs,
+   name} on success. Malformed values fail soft (null), so a
+   typo in a shared link just drops the player onto the daily.  */
+function czParseURL(){
+  let raw='';
+  const h=window.location.hash||'';
+  const q=window.location.search||'';
+  const hm=h.match(/[#&]oc=([^&]+)/);
+  const qm=q.match(/[?&]oc=([^&]+)/);
+  if(hm)raw=hm[1];else if(qm)raw=qm[1];else return null;
+  const parts=raw.split('.');
+  if(!parts[0])return null;
+  const seed=parseInt(parts[0],36);
+  if(!isFinite(seed)||seed<=0)return null;
+  // Belt-and-braces: verify the seed is in the challenge
+  // namespace. Anything else is either malformed or someone
+  // trying to play tomorrow's daily early — reject it.
+  if((seed>>>0)<CZ_BIT)return null;
+  let timeMs=null,name=null;
+  if(parts[1]&&parts[1].length){
+    const t=parseInt(parts[1],36);
+    if(isFinite(t)&&t>=0&&t<3600000000)timeMs=t;
+  }
+  if(parts[2]){
+    try{name=decodeURIComponent(parts[2]).slice(0,14);}catch(e){name=null;}
+  }
+  return{seed:seed>>>0,timeMs,name};
+}
+
+/* Mutate the URL hash without reloading. Used to keep the
+   address bar in sync with the active puzzle so a refresh or
+   address-bar copy gives the same shareable state.             */
+function czSetHash(frag){
+  try{
+    const url=frag?(location.pathname+location.search+'#'+frag)
+                  :(location.pathname+location.search);
+    history.replaceState(null,'',url);
+  }catch(e){/* sandboxed iframes can throw — ignore */}
+}
+
+/* Persist + recall the last-used challenger name so repeat
+   senders don't have to retype it. Wrapped in try/catch for
+   private mode / disabled storage.                              */
+function czGetName(){try{return localStorage.getItem(CZ_NAME_KEY)||'';}catch(e){return '';}}
+function czSetName(n){try{n?localStorage.setItem(CZ_NAME_KEY,n):localStorage.removeItem(CZ_NAME_KEY);}catch(e){}}
+
+/* Stash the currently-playing challenge identity (NOT the move-
+   by-move state). On a refresh mid-puzzle the URL already has
+   the seed, so we don't need to recover it from storage; this
+   is purely for the "exit then come back later via the header
+   ⚔️" case where the URL hash has been cleared.
+   Cleared on completion + on explicit exit.                    */
+function czSaveActive(cz){try{localStorage.setItem(CZ_ACTIVE_KEY,JSON.stringify(cz));}catch(e){}}
+function czClearActive(){try{localStorage.removeItem(CZ_ACTIVE_KEY);}catch(e){}}
+
+/* ── Modal controllers ────────────────────────────────────── */
+function openChallengeCreate(){
+  // Prefill the name from last use so returning senders don't
+  // have to retype. They can still clear it.
+  const i=document.getElementById('cz-name-input');
+  if(i){
+    i.value=czGetName();
+    // Pressing Enter inside the input acts like tapping Generate
+    // — natural for desktop testers, harmless on mobile keypads.
+    i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();startNewChallenge();}};
+  }
+  document.getElementById('cz-create').classList.add('show');
+}
+function closeChallengeCreate(){
+  document.getElementById('cz-create').classList.remove('show');
+}
+
+/* Begin a fresh challenge as the creator. Generates a new seed,
+   stashes the author name, and loads the puzzle in challenge
+   mode. The URL hash is updated to the seed-only form so a
+   mid-play refresh keeps the player in the challenge.          */
+function startNewChallenge(){
+  const nameRaw=(document.getElementById('cz-name-input')?.value||'').trim().slice(0,14);
+  czSetName(nameRaw);
+  closeChallengeCreate();
+  const seed=czNewSeed();
+  const cz={seed,timeMs:null,name:null,creator:true,creatorName:nameRaw||null};
+  czSaveActive(cz);
+  czSetHash(czEncode(seed,null,null));  // seed-only URL until they solve
+  loadChallenge(cz);
+}
+
+/* Receiver flow: show intro overlay with the challenger's info
+   and target time. The puzzle is NOT loaded yet — we wait for
+   "Accept" so the timer doesn't start until the player is ready. */
+let _pendingCz=null;
+function showChallengeIntro(cz){
+  _pendingCz=cz;
+  const fromEl=document.getElementById('cz-intro-from');
+  const tgtEl=document.getElementById('cz-intro-target-val');
+  const wrap=document.getElementById('cz-intro-target');
+  if(cz.name){
+    fromEl.innerHTML=`<strong>${escapeHTML(cz.name)}</strong> challenged you to a one-off puzzle.`;
+  }else{
+    fromEl.innerHTML=`A friend challenged you to a one-off puzzle.`;
+  }
+  if(cz.timeMs!=null){
+    tgtEl.textContent=fmtTime(cz.timeMs);
+    wrap.style.display='';
+  }else{
+    // Seed-only link — no target time. Hide the "time to beat" block.
+    wrap.style.display='none';
+  }
+  document.getElementById('cz-intro').classList.add('show');
+}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function acceptChallenge(){
+  document.getElementById('cz-intro').classList.remove('show');
+  if(!_pendingCz)return;
+  const cz={..._pendingCz,creator:false};
+  czSaveActive(cz);
+  _pendingCz=null;
+  loadChallenge(cz);
+}
+
+/* The "Skip" button on the intro — drop the challenge and load
+   today's daily instead. Clears the hash so a refresh doesn't
+   re-trigger the intro. We don't surface a "ARE YOU SURE" —
+   the challenge is still in the original message, they can
+   come back to it whenever.                                     */
+function declineChallenge(){
+  document.getElementById('cz-intro').classList.remove('show');
+  _pendingCz=null;
+  czSetHash('');
+  czClearActive();
+  // Daily timer was deferred while the intro covered the board.
+  // Start it now so the player isn't penalised for the intro.
+  if(st&&st.timerPending&&!st.solved)startTimer();
+}
+
+/* Leave challenge mode mid-play (or post-solve). Same idea as
+   declineChallenge but callable from the in-game banner and the
+   post-win buttons.                                             */
+function exitChallenge(){
+  czSetHash('');
+  czClearActive();
+  document.getElementById('cz-banner').classList.remove('show');
+  document.getElementById('win').classList.remove('show','challenge','beat','lost','tied','has-vs');
+  loadDaily();
+}
+
+/* Load a challenge puzzle. Builds st from the seeded generator
+   and tags it with .isChallenge + challenger metadata so doWin,
+   showWinUI, etc. can switch on it.                              */
+let _czState=null;
+function loadChallenge(cz){
+  _czState=cz;
+  puzzleNum=-1;            // challenges are not numbered — sentinel
+  _loadedAsToday=false;    // never rollover-reload a challenge view
+  // Clear any leftover win UI from a prior puzzle.
+  document.getElementById('win').classList.remove('show','board-revealed','challenge','beat','lost','tied','has-vs');
+  document.getElementById('win-banner').classList.remove('show');
+  // Show the in-game banner with challenger info
+  const bs=document.getElementById('cz-banner-sub');
+  if(cz.creator){
+    bs.textContent='Set your time, then share the link';
+  }else if(cz.name&&cz.timeMs!=null){
+    bs.textContent=`vs ${cz.name} · target ${fmtTime(cz.timeMs)}`;
+  }else if(cz.timeMs!=null){
+    bs.textContent=`Target ${fmtTime(cz.timeMs)}`;
+  }else if(cz.name){
+    bs.textContent=`Shared puzzle from ${cz.name}`;
+  }else{
+    bs.textContent='Shared one-off puzzle';
+  }
+  document.getElementById('cz-banner').classList.add('show');
+  // Header label — distinct from daily
+  const lbl=document.getElementById('lvllbl');
+  lbl.textContent='⚔️ CHALLENGE';
+  lbl.style.color='#B388FF';
+  // Generate from the challenge seed.
+  initSt(generate(cz.seed));
+  st.isChallenge=true;
+  st.czSeed=cz.seed;
+  st.czCreator=!!cz.creator;
+  st.czCreatorName=cz.creatorName||null;
+  st.czTheirTimeMs=(cz.timeMs!=null)?cz.timeMs:null;
+  st.czTheirName=cz.name||null;
+  build();
+  // Suppress the daily countdown — irrelevant in challenge mode.
+  if(_countdownTimer){clearInterval(_countdownTimer);_countdownTimer=null;}
+}
+
+/* ── Win UI for challenges ───────────────────────────────────
+   Called from doWin() when st.isChallenge. Reuses the existing
+   #win overlay but swaps in challenge-specific content via the
+   .challenge / .beat / .lost / .tied CSS hooks.                 */
+function showChallengeWinUI(){
+  const hints=(st.hintsUsed!=null)?st.hintsUsed:(3-hintCharges);
+  const myFinal=computeFinalTimeMs(st.solveTime,st.moves,st.minMoves,hints);
+  st.czMyFinalMs=myFinal;
+  // Hide daily-only chrome via a single class on #win
+  const winEl=document.getElementById('win');
+  winEl.classList.add('show','challenge');
+  // Persist the result into the hash so a refresh keeps the
+  // shareable state. Creator: their own time. Receiver: leave
+  // the URL as-is (it's the challenger's link, not theirs).
+  if(st.czCreator){
+    czSetHash(czEncode(st.czSeed,myFinal,st.czCreatorName));
+  }
+  // Headline
+  const titleEl=winEl.querySelector('#win-card h2');
+  if(st.czCreator){
+    titleEl.textContent='Challenge Set';
+  }else if(st.czTheirTimeMs==null){
+    titleEl.textContent='Solved';
+  }else if(myFinal<st.czTheirTimeMs){
+    titleEl.textContent='You Win 🏆';
+    winEl.classList.add('beat');
+  }else if(myFinal>st.czTheirTimeMs){
+    titleEl.textContent='So Close';
+    winEl.classList.add('lost');
+  }else{
+    titleEl.textContent='Dead Tied';
+    winEl.classList.add('tied');
+  }
+  // Big time
+  document.getElementById('winmv').textContent=fmtTime(myFinal);
+  // Breakdown line — same format as daily for consistency
+  const perfect=st.moves===st.minMoves;
+  const movesPart=perfect
+    ?`${st.moves} move${st.moves!==1?'s':''} 🎯`
+    :`${st.moves} move${st.moves!==1?'s':''} (fewest: ${st.minMoves})`;
+  document.getElementById('win-par').textContent=
+    `${fmtTime(st.solveTime)} solve · ${movesPart} · ${hints} hint${hints!==1?'s':''}`;
+  buildWinBoard();
+  // Versus block — only for receivers with a known target time
+  if(!st.czCreator&&st.czTheirTimeMs!=null){
+    winEl.classList.add('has-vs');
+    const themLbl=document.querySelector('#cz-vs-them .lbl');
+    const themVal=document.querySelector('#cz-vs-them .val');
+    themLbl.textContent=st.czTheirName||'Them';
+    themVal.textContent=fmtTime(st.czTheirTimeMs);
+    document.getElementById('cz-vs-me-val').textContent=fmtTime(myFinal);
+    const v=document.getElementById('cz-vs-verdict');
+    const diff=Math.abs(myFinal-st.czTheirTimeMs);
+    if(myFinal<st.czTheirTimeMs)v.textContent=`🏆 Won by ${fmtTime(diff)}`;
+    else if(myFinal>st.czTheirTimeMs)v.textContent=`Lost by ${fmtTime(diff)}`;
+    else v.textContent='Photo finish';
+  }
+  // Disable share-link until creator has a time. (For creators
+  // it always works post-solve; for receivers it shares a result
+  // text rather than a new link.)
+  document.getElementById('cz-share-btn').textContent=
+    st.czCreator?'Share Link 🔗':'Share Result 🔗';
+}
+
+/* Copy a challenge link (creator) or a head-to-head result text
+   (receiver) to the clipboard. Same UX pattern as shareWin —
+   button changes to "Copied ✓" briefly so the user sees it
+   worked even when the OS clipboard doesn't visibly react.     */
+function shareChallenge(){
+  const myFinal=st.czMyFinalMs;
+  let text;
+  if(st.czCreator){
+    const link=location.origin+location.pathname+'#'+czEncode(st.czSeed,myFinal,st.czCreatorName);
+    const who=st.czCreatorName?`${st.czCreatorName} solved`:'I solved';
+    text=`⚔️ Oddio Challenge\n${who} this in ${fmtTime(myFinal)}. Beat my time?\n\n${link}`;
+  }else{
+    const them=st.czTheirName||'Them';
+    const me=czGetName()||'Me';
+    const diff=Math.abs(myFinal-st.czTheirTimeMs);
+    const verdict=myFinal<st.czTheirTimeMs
+      ?`🏆 ${me} won by ${fmtTime(diff)}`
+      :myFinal>st.czTheirTimeMs
+        ?`${them} won by ${fmtTime(diff)}`
+        :`Dead tied — ${fmtTime(myFinal)}`;
+    text=`⚔️ Oddio Challenge — RESULT\n${them}: ${fmtTime(st.czTheirTimeMs)} · ${me}: ${fmtTime(myFinal)}\n${verdict}\n\nhttps://oddio.game`;
+  }
+  const btn=document.getElementById('cz-share-btn');
+  const orig=btn.textContent;
+  const done=()=>{btn.textContent='Copied ✓';setTimeout(()=>{btn.textContent=orig;},2000);};
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{
+      const ta=document.createElement('textarea');
+      ta.value=text;ta.style.cssText='position:fixed;opacity:0';
+      document.body.appendChild(ta);ta.select();
+      document.execCommand('copy');document.body.removeChild(ta);done();
+    });
+  }else{
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);done();
+  }
 }
 
 /* ── Archive UI ───────────────────────────────────────────────
@@ -1651,6 +2283,31 @@ const TUT_STEPS=[
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#0C1523;border:1.5px solid #4DA3FF;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#4DA3FF">E</div>
       </div>
     </div>`
+  },
+  /* Step 5 — scoring. Explains the final-time metric used for
+     friend comparison. The receipt-style visual makes the
+     penalty math concrete with a worked example.                */
+  {
+    title:'Final Time',
+    desc:'Your <strong style="color:#4DA3FF">final time</strong> is what you share with friends. Each move over the minimum adds <strong style="color:#EAF2FF">5s</strong>, each hint adds <strong style="color:#EAF2FF">15s</strong>.',
+    visual:`<div style="display:flex;flex-direction:column;gap:5px;font-variant-numeric:tabular-nums;font-size:13px;min-width:200px">
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:rgba(234,242,255,.55)">solve time</span>
+        <span style="color:#EAF2FF;font-weight:600">0:30</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:rgba(234,242,255,.55)">+ 2 extra moves</span>
+        <span style="color:rgba(234,242,255,.7)">+0:10</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:rgba(234,242,255,.55)">+ 1 hint</span>
+        <span style="color:rgba(234,242,255,.7)">+0:15</span>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.18);padding-top:6px;margin-top:2px;display:flex;justify-content:space-between;align-items:baseline">
+        <span style="color:rgba(234,242,255,.85);font-weight:600;letter-spacing:.3px">final time</span>
+        <span style="color:#4DA3FF;font-weight:700;font-size:18px">0:55</span>
+      </div>
+    </div>`
   }
 ];
 let tutStep=0;
@@ -1733,7 +2390,46 @@ window.addEventListener('orientationchange',()=>setTimeout(fitToViewport,200));
 
 tutRender();
 if(!hasVisited())document.getElementById('tut').classList.add('show');
-loadDaily();
+
+/* ── Boot routing ────────────────────────────────────────────
+   Three possible entry points:
+     1. URL has #oc=...  → receiver flow: load daily as backdrop,
+                            then show the challenge intro. The
+                            tutorial (if first-launch) still shows
+                            first; we queue the challenge intro
+                            for after dismissal so the player isn't
+                            buried under two overlays.
+     2. localStorage has an active challenge but the URL doesn't
+                          → likely the user navigated back here
+                            after exiting the challenge; we let
+                            them resume but only if there's no
+                            pending hash conflict. Cleared on
+                            successful daily load.
+     3. Otherwise         → normal daily entry.                  */
+const _bootCz=czParseURL();
+if(_bootCz){
+  /* Show the intro overlay FIRST (before loadDaily builds the
+     board) so that startTimer's deferred-overlay check picks it
+     up and the daily timer doesn't tick under the intro. If a
+     first-time tutorial is also showing, we chain: tutorial
+     dismisses → intro shows → original tutSkip's startTimer
+     defers to the now-visible intro.                            */
+  if(document.getElementById('tut').classList.contains('show')){
+    const origSkip=tutSkip;
+    window.tutSkip=function(){
+      // Reveal intro BEFORE the original tutSkip runs, so its
+      // trailing startTimer() call sees #cz-intro and defers.
+      showChallengeIntro(_bootCz);
+      origSkip.apply(this,arguments);
+    };
+  }else{
+    showChallengeIntro(_bootCz);
+  }
+  loadDaily();
+}else{
+  loadDaily();
+}
+
 // Defer to next frame so the just-built board has settled into layout
 requestAnimationFrame(fitToViewport);</script>
 </body>
