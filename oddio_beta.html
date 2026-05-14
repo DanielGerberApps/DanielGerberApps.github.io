@@ -382,7 +382,12 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 #win.challenge #win-streak,
 #win.challenge #win-stats,
 #win.challenge #win-countdown,
-#win.challenge #win-archive-btn{display:none}
+#win.challenge #win-archive-btn,
+/* Hide the partial board on challenge mode: cells stay covered
+   (there's no Show Board toggle here) so the ~220px of vertical
+   space it claims gives nothing in return — the head-to-head
+   comparison block is the real focus.                            */
+#win.challenge #win-board{display:none}
 /* "Send / Play again / Daily" challenge-mode buttons */
 #cz-win-btns{display:none;gap:7px;margin-top:6px;flex-wrap:wrap;justify-content:center}
 #win.challenge #cz-win-btns{display:flex}
@@ -2161,11 +2166,16 @@ function shareChallenge(){
   }else{
     const them=st.czTheirName||'Them';
     const me=czGetName()||'Me';
+    // Subject-form fallbacks for the verdict sentence: "I won by X"
+    // reads correctly when the user has no saved name; "Me won by X"
+    // does not. Same for the opponent ("They" vs "Them").
+    const meSubj=czGetName()||'I';
+    const themSubj=st.czTheirName||'They';
     const diff=Math.abs(myFinal-st.czTheirTimeMs);
     const verdict=myFinal<st.czTheirTimeMs
-      ?`🏆 ${me} won by ${fmtTimeUnit(diff)}`
+      ?`🏆 ${meSubj} won by ${fmtTimeUnit(diff)}`
       :myFinal>st.czTheirTimeMs
-        ?`${them} won by ${fmtTimeUnit(diff)}`
+        ?`${themSubj} won by ${fmtTimeUnit(diff)}`
         :`Dead tied — ${fmtTimeUnit(myFinal)}`;
     title='Oddio Challenge — Result';
     text=`⚔️ Oddio Challenge — RESULT\n${them}: ${fmtTimeUnit(st.czTheirTimeMs)} · ${me}: ${fmtTimeUnit(myFinal)}\n${verdict}\n\nhttps://oddio.game`;
