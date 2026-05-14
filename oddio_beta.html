@@ -918,13 +918,25 @@ function generate(seed,_attempt=0){
   /* Step 9: Final invariants check + retry.
      If Step 7's hard guards prevented full propagation solvability
      OR Step 8 couldn't reach MIN_MOVES wrong tiles for this RNG
-     draw, retry with a perturbed seed. Capped at 50 attempts.   */
+     draw, retry with a perturbed seed. Capped at 500 attempts.
+     Each retry uses seed+1, yielding an independent RNG sequence
+     and lock pattern. Empirical failure rate at attempt 0 is
+     0/154,788 across the full 150-yr daily sweep + 100k random
+     challenge seeds, so 500 independent shots makes exhaustion
+     astronomically improbable. The +500 retry buffer stays well
+     inside the 2.1-billion-integer gap between the daily and
+     challenge seed namespaces, so this never causes cross-range
+     bleed even at the worst-case daily seed.
+
+     On exhaustion we THROW rather than silently return a broken
+     puzzle — fail loud so the call site can show a real error
+     instead of feeding the player an unsolvable board.          */
   const finalCs=buildConstraintList(rp,cp,sgs);
   const propOK=propagate(startVals,locked,finalCs).solved;
   const finalWrong=startVals.reduce((s,v,i)=>s+(!locked[i]&&v!==solVals[i]?1:0),0);
   if(!propOK||finalWrong<MIN_MOVES){
-    if(_attempt<50)return generate(seed!=null?seed+1:null,_attempt+1);
-    console.warn('generate: retry cap reached, returning best effort');
+    if(_attempt<500)return generate(seed!=null?seed+1:null,_attempt+1);
+    throw new Error('generate: 500 retries exhausted at seed '+seed);
   }
   return{vals:startVals,solVals,locked,rp,cp,sgs};
 }
@@ -981,6 +993,10 @@ function fmtTime(ms) {
     ? `${min}:${String(sec).padStart(2, '0')}.${tenths}`
     : `${sec}.${tenths}`;
 }
+/* Like fmtTime, but adds an "s" suffix when the output is a bare number
+   so end-game displays always carry units. When minutes are present the
+   colon already implies time, so we leave it alone (no "1:23.4s"). */
+function fmtTimeUnit(ms){const t=fmtTime(ms);return t.indexOf(':')>=0?t:t+'s';}
 function updateTimerDisplay(ms){
   const el=document.getElementById('tmcnt');
   if(el)el.textContent=fmtTime(ms);
@@ -1330,6 +1346,50 @@ function toggleWinBoard(){
       document.getElementById('winmv').textContent;
   }
 }
+/* Native-OS share with graceful fallback chain. Tries:
+   1. navigator.share() — opens the OS share dialog (iOS sheet,
+      macOS popover, Windows share UI, Android sheet). Modern browsers
+      on every major desktop OS support this except Firefox.
+   2. navigator.clipboard.writeText() — async clipboard API.
+   3. document.execCommand('copy') via a hidden textarea — legacy.
+   Resolves to one of: 'shared' | 'cancelled' | 'copied' | 'error'.
+   Callers can switch UI feedback on the outcome (no toast if the
+   user cancelled, "Shared ✓" if the OS dialog fired, "Copied ✓"
+   if we fell back to clipboard).                                  */
+async function nativeShare({title,text,url}){
+  // We split url out of the text payload when navigator.share runs
+  // so link-preview-aware apps don't render it twice. The clipboard
+  // fallbacks re-join them so the copied text always contains the URL.
+  if(navigator.share){
+    const payload={title,text,url};
+    // canShare is a hint — some browsers (older Safari, some Chrome
+    // versions) implement share() without canShare(). If absent we
+    // just try share() and let it succeed or throw.
+    if(!navigator.canShare||navigator.canShare(payload)){
+      try{await navigator.share(payload);return 'shared';}
+      catch(e){
+        // AbortError = user closed the dialog; don't fall back —
+        // they made an explicit choice and we shouldn't silently
+        // copy something they declined to share.
+        if(e&&e.name==='AbortError')return 'cancelled';
+        // Other errors (NotAllowedError, no targets, etc.) → fall through.
+      }
+    }
+  }
+  const combined=url?`${text}\n${url}`:text;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    try{await navigator.clipboard.writeText(combined);return 'copied';}
+    catch(e){/* fall through to legacy path */}
+  }
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=combined;ta.style.cssText='position:fixed;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    return 'copied';
+  }catch(e){return 'error';}
+}
+
 function shareWin(){
   const minMoves=st.minMoves;
   let grid='';
@@ -1351,21 +1411,25 @@ function shareWin(){
   const perfMark=st.moves===minMoves?' 🎯':'';
   const hints=(st.hintsUsed!=null)?st.hintsUsed:(3-hintCharges);
   const finalTime=computeFinalTimeMs(st.solveTime,st.moves,minMoves,hints);
-  const text=`Oddio #${puzzleNum} · ${shortDate()} · ⏱️ ${fmtTime(finalTime)}\n${fmtTime(st.solveTime)} solve · ${st.moves} move${st.moves!==1?'s':''}${perfMark} (fewest: ${minMoves}) · 💡 ${hints} hint${hints!==1?'s':''}\n${streakLine}\n${grid}\nhttps://oddio.game`;
+  // URL is included inline in the text so every share target — even
+  // ones that ignore the share API's separate `url` field — preserves
+  // it. This matches Wordle-style game shares: a single self-contained
+  // block recipients can paste anywhere.
+  const text=`Oddio #${puzzleNum} · ${shortDate()} · ⏱️ ${fmtTimeUnit(finalTime)}\n${fmtTimeUnit(st.solveTime)} solve · ${st.moves} move${st.moves!==1?'s':''}${perfMark} (fewest: ${minMoves}) · 💡 ${hints} hint${hints!==1?'s':''}\n${streakLine}\n${grid}\nhttps://oddio.game`;
   const toast=document.getElementById('share-toast');
   const btn=document.getElementById('share-btn');
-  navigator.clipboard.writeText(text).then(()=>{
-    btn.textContent='Copied ✓';
-    toast.textContent='COPIED TO CLIPBOARD';
-    setTimeout(()=>{btn.textContent='Share 🔗';toast.textContent='';},2000);
-  }).catch(()=>{
-    // fallback: select from textarea
-    const ta=document.createElement('textarea');
-    ta.value=text;ta.style.cssText='position:fixed;opacity:0';
-    document.body.appendChild(ta);ta.select();
-    document.execCommand('copy');document.body.removeChild(ta);
-    btn.textContent='Copied ✓';
-    toast.textContent='COPIED TO CLIPBOARD';
+  nativeShare({title:`Oddio #${puzzleNum}`,text}).then(outcome=>{
+    if(outcome==='cancelled')return; // user dismissed native dialog — no UI churn
+    if(outcome==='shared'){
+      btn.textContent='Shared ✓';
+      toast.textContent='';
+    }else if(outcome==='copied'){
+      btn.textContent='Copied ✓';
+      toast.textContent='COPIED TO CLIPBOARD';
+    }else{ // 'error'
+      btn.textContent='Share failed';
+      toast.textContent='';
+    }
     setTimeout(()=>{btn.textContent='Share 🔗';toast.textContent='';},2000);
   });
 }
@@ -1557,12 +1621,16 @@ function updateHeaderLabel(){
    solve. Reads streak fresh each time so the displayed numbers
    include any update recordSolve() just made.                  */
 function showWinUI(){
+  // Reset the title — showChallengeWinUI may have left it set to
+  // "Challenge Set" / "You Win 🏆" / etc. from a previous challenge,
+  // and we don't want that leaking into a daily win screen.
+  document.querySelector('#win-card h2').textContent='Solved';
   // Hints used — fall back to 0 in the rare case st.hintsUsed
   // was never set (shouldn't happen post-feature, but safe).
   const hints=(st.hintsUsed!=null)?st.hintsUsed:(3-hintCharges);
   const finalMs=computeFinalTimeMs(st.solveTime,st.moves,st.minMoves,hints);
   // Headline: the final time (with penalties baked in).
-  document.getElementById('winmv').textContent=fmtTime(finalMs);
+  document.getElementById('winmv').textContent=fmtTimeUnit(finalMs);
   /* Breakdown line — shows the components so the penalty math is
      transparent. Fewest-moves info is folded in inline (🎯 for
      perfect, "(fewest: N)" otherwise) so we don't need a separate
@@ -1572,7 +1640,7 @@ function showWinUI(){
     ?`${st.moves} move${st.moves!==1?'s':''} 🎯`
     :`${st.moves} move${st.moves!==1?'s':''} (fewest: ${st.minMoves})`;
   document.getElementById('win-par').textContent=
-    `${fmtTime(st.solveTime)} solve · ${movesPart} · ${hints} hint${hints!==1?'s':''}`;
+    `${fmtTimeUnit(st.solveTime)} solve · ${movesPart} · ${hints} hint${hints!==1?'s':''}`;
   buildWinBoard();
   const s=loadStreak();
   const streakEl=document.getElementById('win-streak');
@@ -1702,7 +1770,18 @@ function loadPuzzle(num){
     // the generator's well-tested seed range is reused. Works for
     // any puzzleNum — today, past, or (in theory) future.
     const seed=num*997+42;
-    initSt(generate(seed));
+    /* Defense in depth: generate() throws on 500-retry exhaustion
+       (empirical rate: 0/154,788, so this should be unreachable).
+       If it ever does, surface a clear message rather than crashing
+       silently — and don't auto-retry, which could spin forever.   */
+    let p;
+    try{p=generate(seed);}
+    catch(e){
+      console.error(e);
+      alert("Couldn't generate today's puzzle. Please refresh the page.");
+      return;
+    }
+    initSt(p);
     build();
   }
   startCountdown();
@@ -1893,7 +1972,7 @@ function showChallengeIntro(cz){
     fromEl.innerHTML=`A friend challenged you to a one-off puzzle.`;
   }
   if(cz.timeMs!=null){
-    tgtEl.textContent=fmtTime(cz.timeMs);
+    tgtEl.textContent=fmtTimeUnit(cz.timeMs);
     wrap.style.display='';
   }else{
     // Seed-only link — no target time. Hide the "time to beat" block.
@@ -1954,9 +2033,9 @@ function loadChallenge(cz){
   if(cz.creator){
     bs.textContent='Set your time, then share the link';
   }else if(cz.name&&cz.timeMs!=null){
-    bs.textContent=`vs ${cz.name} · target ${fmtTime(cz.timeMs)}`;
+    bs.textContent=`vs ${cz.name} · target ${fmtTimeUnit(cz.timeMs)}`;
   }else if(cz.timeMs!=null){
-    bs.textContent=`Target ${fmtTime(cz.timeMs)}`;
+    bs.textContent=`Target ${fmtTimeUnit(cz.timeMs)}`;
   }else if(cz.name){
     bs.textContent=`Shared puzzle from ${cz.name}`;
   }else{
@@ -1968,7 +2047,21 @@ function loadChallenge(cz){
   lbl.textContent='⚔️ CHALLENGE';
   lbl.style.color='#B388FF';
   // Generate from the challenge seed.
-  initSt(generate(cz.seed));
+  /* Defense in depth: same try/catch as loadPuzzle. A failure here
+     means the challenger's seed is a generator pathology — vanishingly
+     unlikely, but treat it like a malformed link.                    */
+  let p;
+  try{p=generate(cz.seed);}
+  catch(e){
+    console.error(e);
+    alert('This challenge link is invalid. Falling back to today\'s puzzle.');
+    document.getElementById('cz-banner').classList.remove('show');
+    document.getElementById('lvllbl').style.color='';
+    czSetHash('');
+    loadDaily();
+    return;
+  }
+  initSt(p);
   st.isChallenge=true;
   st.czSeed=cz.seed;
   st.czCreator=!!cz.creator;
@@ -1991,6 +2084,11 @@ function showChallengeWinUI(){
   // Hide daily-only chrome via a single class on #win
   const winEl=document.getElementById('win');
   winEl.classList.add('show','challenge');
+  // The in-game challenge banner is redundant once we're on the win
+  // screen (the win card itself has Exit/Share buttons), and removing
+  // it frees vertical space so the action buttons don't get clipped
+  // on short viewports.
+  document.getElementById('cz-banner').classList.remove('show');
   // Persist the result into the hash so a refresh keeps the
   // shareable state. Creator: their own time. Receiver: leave
   // the URL as-is (it's the challenger's link, not theirs).
@@ -2014,14 +2112,14 @@ function showChallengeWinUI(){
     winEl.classList.add('tied');
   }
   // Big time
-  document.getElementById('winmv').textContent=fmtTime(myFinal);
+  document.getElementById('winmv').textContent=fmtTimeUnit(myFinal);
   // Breakdown line — same format as daily for consistency
   const perfect=st.moves===st.minMoves;
   const movesPart=perfect
     ?`${st.moves} move${st.moves!==1?'s':''} 🎯`
     :`${st.moves} move${st.moves!==1?'s':''} (fewest: ${st.minMoves})`;
   document.getElementById('win-par').textContent=
-    `${fmtTime(st.solveTime)} solve · ${movesPart} · ${hints} hint${hints!==1?'s':''}`;
+    `${fmtTimeUnit(st.solveTime)} solve · ${movesPart} · ${hints} hint${hints!==1?'s':''}`;
   buildWinBoard();
   // Versus block — only for receivers with a known target time
   if(!st.czCreator&&st.czTheirTimeMs!=null){
@@ -2029,12 +2127,12 @@ function showChallengeWinUI(){
     const themLbl=document.querySelector('#cz-vs-them .lbl');
     const themVal=document.querySelector('#cz-vs-them .val');
     themLbl.textContent=st.czTheirName||'Them';
-    themVal.textContent=fmtTime(st.czTheirTimeMs);
-    document.getElementById('cz-vs-me-val').textContent=fmtTime(myFinal);
+    themVal.textContent=fmtTimeUnit(st.czTheirTimeMs);
+    document.getElementById('cz-vs-me-val').textContent=fmtTimeUnit(myFinal);
     const v=document.getElementById('cz-vs-verdict');
     const diff=Math.abs(myFinal-st.czTheirTimeMs);
-    if(myFinal<st.czTheirTimeMs)v.textContent=`🏆 Won by ${fmtTime(diff)}`;
-    else if(myFinal>st.czTheirTimeMs)v.textContent=`Lost by ${fmtTime(diff)}`;
+    if(myFinal<st.czTheirTimeMs)v.textContent=`🏆 Won by ${fmtTimeUnit(diff)}`;
+    else if(myFinal>st.czTheirTimeMs)v.textContent=`Lost by ${fmtTimeUnit(diff)}`;
     else v.textContent='Photo finish';
   }
   // Disable share-link until creator has a time. (For creators
@@ -2042,6 +2140,10 @@ function showChallengeWinUI(){
   // text rather than a new link.)
   document.getElementById('cz-share-btn').textContent=
     st.czCreator?'Share Link 🔗':'Share Result 🔗';
+  // The banner removal changed #og's natural height; re-fit so the
+  // win card gets the reclaimed space rather than being scaled to
+  // the now-stale (taller) measurement.
+  if(typeof fitToViewport==='function')fitToViewport();
 }
 
 /* Copy a challenge link (creator) or a head-to-head result text
@@ -2050,38 +2152,33 @@ function showChallengeWinUI(){
    worked even when the OS clipboard doesn't visibly react.     */
 function shareChallenge(){
   const myFinal=st.czMyFinalMs;
-  let text;
+  let title,text;
   if(st.czCreator){
     const link=location.origin+location.pathname+'#'+czEncode(st.czSeed,myFinal,st.czCreatorName);
     const who=st.czCreatorName?`${st.czCreatorName} solved`:'I solved';
-    text=`⚔️ Oddio Challenge\n${who} this in ${fmtTime(myFinal)}. Beat my time?\n\n${link}`;
+    title='Oddio Challenge';
+    text=`⚔️ Oddio Challenge\n${who} this in ${fmtTimeUnit(myFinal)}. Beat my time?\n\n${link}`;
   }else{
     const them=st.czTheirName||'Them';
     const me=czGetName()||'Me';
     const diff=Math.abs(myFinal-st.czTheirTimeMs);
     const verdict=myFinal<st.czTheirTimeMs
-      ?`🏆 ${me} won by ${fmtTime(diff)}`
+      ?`🏆 ${me} won by ${fmtTimeUnit(diff)}`
       :myFinal>st.czTheirTimeMs
-        ?`${them} won by ${fmtTime(diff)}`
-        :`Dead tied — ${fmtTime(myFinal)}`;
-    text=`⚔️ Oddio Challenge — RESULT\n${them}: ${fmtTime(st.czTheirTimeMs)} · ${me}: ${fmtTime(myFinal)}\n${verdict}\n\nhttps://oddio.game`;
+        ?`${them} won by ${fmtTimeUnit(diff)}`
+        :`Dead tied — ${fmtTimeUnit(myFinal)}`;
+    title='Oddio Challenge — Result';
+    text=`⚔️ Oddio Challenge — RESULT\n${them}: ${fmtTimeUnit(st.czTheirTimeMs)} · ${me}: ${fmtTimeUnit(myFinal)}\n${verdict}\n\nhttps://oddio.game`;
   }
   const btn=document.getElementById('cz-share-btn');
   const orig=btn.textContent;
-  const done=()=>{btn.textContent='Copied ✓';setTimeout(()=>{btn.textContent=orig;},2000);};
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(text).then(done).catch(()=>{
-      const ta=document.createElement('textarea');
-      ta.value=text;ta.style.cssText='position:fixed;opacity:0';
-      document.body.appendChild(ta);ta.select();
-      document.execCommand('copy');document.body.removeChild(ta);done();
-    });
-  }else{
-    const ta=document.createElement('textarea');
-    ta.value=text;ta.style.cssText='position:fixed;opacity:0';
-    document.body.appendChild(ta);ta.select();
-    document.execCommand('copy');document.body.removeChild(ta);done();
-  }
+  nativeShare({title,text}).then(outcome=>{
+    if(outcome==='cancelled')return;
+    btn.textContent=outcome==='shared'?'Shared ✓'
+                   :outcome==='copied'?'Copied ✓'
+                   :'Share failed';
+    setTimeout(()=>{btn.textContent=orig;},2000);
+  });
 }
 
 /* ── Archive UI ───────────────────────────────────────────────
