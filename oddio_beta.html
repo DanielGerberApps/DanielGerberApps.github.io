@@ -134,6 +134,10 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
 .wb-ci.o,.wb-ri.o{background:rgba(255,107,107,.28);color:#FF6B6B}
 #toggle-board{background:rgba(255,255,255,.06);color:rgba(234,242,255,.45);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:5px 12px;font-size:11px;font-weight:500;cursor:pointer;letter-spacing:.3px}
 #toggle-board:active{transform:scale(.96)}
+/* Archive button shares the secondary tone with #toggle-board —
+   it's a navigation action, not the primary share CTA.            */
+#win-archive-btn{background:rgba(255,255,255,.06);color:rgba(234,242,255,.45);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:5px 12px;font-size:11px;font-weight:500;cursor:pointer;letter-spacing:.3px}
+#win-archive-btn:active{transform:scale(.96)}
 .wb-cell{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
 .wb-cell.lk-e{background:rgba(77,163,255,.18);color:#4DA3FF;border:1.5px solid rgba(77,163,255,.45)}
 .wb-cell.lk-o{background:rgba(255,107,107,.18);color:#FF6B6B;border:1.5px solid rgba(255,107,107,.45)}
@@ -217,7 +221,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
    Full-overlay sheet so it works on mobile too. Grid of buttons,
    each one a past puzzle. Status: solved (green check), today
    (highlighted), unsolved (default). Tap to load.            */
-#archive{display:none;position:fixed;inset:0;background:rgba(7,13,24,.96);z-index:50;flex-direction:column;align-items:center;padding:20px;overflow-y:auto}
+#archive{display:none;position:fixed;inset:0;background:#070D18;z-index:50;flex-direction:column;align-items:center;padding:20px;overflow-y:auto}
 #archive.show{display:flex}
 #archive-header{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:420px;margin-bottom:14px}
 #archive-title{font-size:15px;font-weight:600;color:#EAF2FF;letter-spacing:2px}
@@ -241,7 +245,6 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
     <div><div id="logo"><span class="dot-o blue-dot">O</span>DDI<span class="dot-o orange-dot">O</span></div><div id="tagline">Oddly Addicting</div></div>
     <div id="hdr-right">
       <div id="lvllbl">Loading…</div>
-      <button class="dbt" id="archive-btn" onclick="openArchive()">📅 Archive</button>
       <button class="dbt" onclick="tutStep=0; tutRender(); document.getElementById('tut').classList.add('show');">❓ Help</button>
     </div>
   </div>
@@ -750,6 +753,8 @@ function clearHint(el){
    requestAnimationFrame gives smooth millisecond updates and
    pauses cleanly when the tab is backgrounded.                */
 let timerRAF=null;
+let _pauseAt=null;  // wall-clock time we went hidden, or null when running
+let _loadedAsToday=false;  // did loadPuzzle get called with today's number? — used for midnight-rollover detection
 function fmtTime(ms) {
   ms = Math.max(0, Math.floor(ms));
   const totalSec = Math.floor(ms / 1000);
@@ -780,6 +785,7 @@ function startTimer(){
   st.timerPending=false;
   st.startTime=performance.now();
   st.solveTime=null;
+  _pauseAt=null;  // ensure a stale pause from a prior puzzle can't shift this one
   updateTimerDisplay(0);
   const tick=()=>{
     if(!st||st.solved||st.startTime==null){timerRAF=null;return;}
@@ -795,6 +801,93 @@ function stopTimer(){
     updateTimerDisplay(st.solveTime);
   }
 }
+
+/* Pause the timer when the page goes out of view (tab switch,
+   window minimize, screen lock, app-switch on iOS/Android).
+   We shift st.startTime forward by the pause duration on resume —
+   that way the elapsed-time formula (now - startTime) used by the
+   RAF tick and stopTimer keeps working with no other changes.
+
+   We listen to TWO event sources:
+
+   1. document.visibilitychange — the web standard. Works on
+      desktop browsers and Android WebView. Unreliable on iOS
+      WKWebView: WebKit bug 207256 — the iOS process can be
+      suspended before the event fires.
+
+   2. @capacitor/app's 'pause'/'resume' events — these hook into
+      the native iOS/Android app lifecycle (UIApplication.did-
+      EnterBackgroundNotification on iOS, Activity.onPause on
+      Android), which fires reliably. If the plugin isn't
+      installed, the code below is a silent no-op and we fall
+      back to visibilitychange alone.
+
+   The handlers are idempotent (guarded by _pauseAt), so when
+   both event sources fire for the same transition — common on
+   Capacitor — the second one is a safe no-op.                 */
+/* Midnight-rollover detector. If the page was loaded as today's
+   puzzle but the system date has since rolled past midnight,
+   reload to fetch the new day's puzzle. Caller-agnostic — safe
+   to call from anywhere (resume, countdown tick).
+   We deliberately use puzzleNum vs todayPuzzleNum() rather than
+   stored day-keys: the same comparison covers DST shifts and
+   manual clock changes too.                                       */
+function checkRolloverAndReload(){
+  if(_loadedAsToday&&todayPuzzleNum()!==puzzleNum){
+    location.reload();
+    return true;
+  }
+  return false;
+}
+
+function pauseTimer(){
+  if(!st||st.solved||st.startTime==null||st.timerPending)return;
+  if(_pauseAt!=null)return;  // already paused — idempotent
+  _pauseAt=performance.now();
+  if(timerRAF){cancelAnimationFrame(timerRAF);timerRAF=null;}
+}
+function resumeTimer(){
+  /* Rollover check FIRST: if the day changed while we were
+     suspended (iOS backgrounding, screen-locked overnight), we
+     need to reload before doing anything else. No point shifting
+     startTime on a puzzle we're about to discard.                 */
+  if(checkRolloverAndReload())return;
+  if(!st||st.solved||st.startTime==null||st.timerPending)return;
+  if(_pauseAt==null)return;  // wasn't paused — idempotent
+  st.startTime+=performance.now()-_pauseAt;
+  _pauseAt=null;
+  const tick=()=>{
+    if(!st||st.solved||st.startTime==null){timerRAF=null;return;}
+    updateTimerDisplay(performance.now()-st.startTime);
+    timerRAF=requestAnimationFrame(tick);
+  };
+  timerRAF=requestAnimationFrame(tick);
+}
+
+// Web-standard visibility listener. Used on its own in browsers,
+// and as a backstop alongside the Capacitor listeners below.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden')pauseTimer();
+  else resumeTimer();
+});
+
+/* Capacitor App plugin wiring. Activated when @capacitor/app is
+   installed and registered. We try immediately (Capacitor's bridge
+   is normally injected before user scripts) and again on load as
+   a safety net for slower plugin registration.                    */
+function _wireCapacitorAppLifecycle(){
+  const App=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.App;
+  if(!App||App.__oddioWired)return;
+  App.__oddioWired=true;
+  // appStateChange gives {isActive:bool}. We also subscribe to
+  // pause/resume since their semantics are explicit on native.
+  try{
+    App.addListener('pause',pauseTimer);
+    App.addListener('resume',resumeTimer);
+  }catch(e){/* plugin shape varied across versions — fail soft */}
+}
+_wireCapacitorAppLifecycle();
+window.addEventListener('load',_wireCapacitorAppLifecycle);
 
 /* ── Actions ─────────────────────────────────────────────── */
 function doTap(i){
@@ -1256,6 +1349,14 @@ let _countdownTimer=null;
 function startCountdown(){
   if(_countdownTimer){clearInterval(_countdownTimer);_countdownTimer=null;}
   const tick=()=>{
+    /* Robust rollover check — catches the case where setInterval
+       was throttled or suspended past midnight (iOS low-power,
+       background return mid-tick). The ms<=1000 branch below
+       handles the narrow happy-path; this catches everything else. */
+    if(checkRolloverAndReload()){
+      clearInterval(_countdownTimer);_countdownTimer=null;
+      return;
+    }
     const ms=msUntilTomorrow();
     const txt=`Next puzzle in ${fmtCountdown(ms)}`;
     const el=document.getElementById('win-countdown');
@@ -1285,6 +1386,11 @@ function loadPuzzle(num){
   document.getElementById('win').classList.remove('show','board-revealed');
   document.getElementById('win-banner').classList.remove('show');
   const isToday=(num===todayPuzzleNum());
+  /* Mark whether THIS page-view is anchored to today. Used by the
+     midnight-rollover detector — only today-anchored views should
+     reload when the day changes. Archive views are intentional
+     time-travel and must not get yanked back to today.            */
+  _loadedAsToday=isToday;
   if(isToday)bumpPlayedIfNewDay();
   updateHeaderLabel();
   /* Look up in history first; fall back to legacy oddio_daily
