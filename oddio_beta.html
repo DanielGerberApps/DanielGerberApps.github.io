@@ -118,8 +118,18 @@ body.cap{align-items:flex-start;padding-top:env(safe-area-inset-top);padding-bot
 /* Win overlay — full coverage, game-area clips it to rounded shape */
 #win{display:none;position:absolute;inset:0;background:#070D18;flex-direction:column;align-items:center;justify-content:center;gap:0;z-index:30}
 #win.show{display:flex}
-/* When real board is revealed, hide overlay entirely */
+/* When real board is revealed, hide overlay entirely. We also blank
+   the post-solve readout row (#bot — Moves/Time/Hint) and the
+   copyright line so the slim summary banner at the bottom isn't
+   competing with leftover values clipping into view above it.
+   visibility (not display:none) preserves the layout — the board
+   stays anchored where the player tapped Show Board, instead of
+   jumping up as #og's natural height shrinks.                    */
 #win.board-revealed{display:none}
+#og:has(#win.board-revealed) #bot,
+#og:has(#win.board-revealed) #copyright,
+#og.board-revealed #bot,
+#og.board-revealed #copyright{visibility:hidden}
 /* Slim banner shown instead when board is revealed */
 #win-banner{display:none;position:absolute;bottom:0;left:0;right:0;z-index:31;
   background:#070D18;border-radius:0 0 14px 14px;
@@ -1217,7 +1227,15 @@ function _oddioHandleAppUrl(ev){
   // If the win UI is up from a previous solve, dismiss it — the
   // user is being routed somewhere new.
   document.getElementById('win').classList.remove('show','challenge','beat','lost','tied','has-vs');
-  showChallengeIntro(cz);
+  /* Same priority as boot: saved solve beats intro. Lets a player
+     re-tap their own share link (or a friend's link they already
+     completed) and land on their win screen.                     */
+  const saved=czLoadSolve(cz.seed);
+  if(saved){
+    restoreChallengeFromSnapshot(saved);
+  }else{
+    showChallengeIntro(cz);
+  }
 }
 _wireCapacitorAppLifecycle();
 window.addEventListener('load',_wireCapacitorAppLifecycle);
@@ -1332,10 +1350,13 @@ function doWin(){
   // Pin hints-used onto st so showWinUI/shareWin can read it the
   // same way whether this is a live solve or a restored snapshot.
   st.hintsUsed=3-hintCharges;
-  /* Challenge solves are ephemeral — they MUST NOT touch the daily
-     history, streak, or "puzzles played today" counter. The URL hash
-     is the only persistence layer; that's the entire point of the
-     serverless design.                                              */
+  /* Challenge solves are ephemeral as far as the daily streak goes —
+     they MUST NOT touch the daily history, streak, or "puzzles played
+     today" counter. But we DO persist a per-seed snapshot to a separate
+     registry (oddio_cz_solves) so a post-solve refresh lands the player
+     back on their challenge win screen instead of the dead-link
+     overlay. Storage is the only persistence layer in this serverless
+     design; the URL hash carries the seed, not the solve state.      */
   if(!st.isChallenge){
     /* Persist this solve to localStorage BEFORE the win UI populates,
        so a reload mid-celebration still restores cleanly. We also
@@ -1355,6 +1376,24 @@ function doWin(){
       saveDailyRec(snapshot);   // keep legacy key in sync for current-day reloads
       recordSolve();
     }
+  }else{
+    /* Challenge snapshot — board + stats + challenger metadata.
+       restoreChallengeFromSnapshot() consumes this on next boot
+       to reconstruct st without re-running the receive flow.   */
+    const snapshot={
+      seed:st.czSeed,
+      savedAt:Date.now(),
+      solved:true,
+      moves:st.moves,timeMs:st.solveTime,hintsUsed:3-hintCharges,minMoves:st.minMoves,
+      vals:[...st.vals],startVals:[...st.startVals],solVals:[...st.solVals],
+      locked:[...st.locked],rp:[...st.rp],cp:[...st.cp],
+      sgs:st.sgs.map(sg=>[...sg]),
+      czCreator:!!st.czCreator,
+      czCreatorName:st.czCreatorName||null,
+      czTheirTimeMs:(st.czTheirTimeMs!=null)?st.czTheirTimeMs:null,
+      czTheirName:st.czTheirName||null
+    };
+    czSaveSolve(snapshot);
   }
   document.querySelectorAll('.tile').forEach((el,i)=>{
     setTimeout(()=>{
@@ -1425,6 +1464,9 @@ function toggleWinBoard(){
   const revealing=!win.classList.contains('board-revealed');
   win.classList.toggle('board-revealed',revealing);
   banner.classList.toggle('show',revealing);
+  /* Mirror the state onto #og for browsers without :has() support.
+     The CSS rule blanks #bot and #copyright via either selector. */
+  document.getElementById('og').classList.toggle('board-revealed',revealing);
   if(revealing){
     document.getElementById('win-banner-mv').textContent=
       document.getElementById('winmv').textContent;
@@ -1555,6 +1597,7 @@ function build(){
   });
   document.getElementById('mvcnt').textContent=0;
   document.getElementById('win').classList.remove('show','board-revealed');
+  document.getElementById('og').classList.remove('board-revealed');
   document.getElementById('win-banner').classList.remove('show');
   document.getElementById('toggle-board').textContent='Show Board 👁';
   refresh();
@@ -1811,6 +1854,7 @@ function loadPuzzle(num){
      build() rebuilds tiles fresh so per-tile styles are fine, but
      the overlay divs persist between puzzles.                     */
   document.getElementById('win').classList.remove('show','board-revealed');
+  document.getElementById('og').classList.remove('board-revealed');
   document.getElementById('win-banner').classList.remove('show');
   const isToday=(num===todayPuzzleNum());
   /* Mark whether THIS page-view is anchored to today. Used by the
@@ -1931,6 +1975,26 @@ function loadDaily(){
 const CZ_BIT=0x80000000;              // hi-bit namespace flag
 const CZ_NAME_KEY='oddio_cz_name';     // last-used author name
 const CZ_ACTIVE_KEY='oddio_cz_active'; // remember the link if user navigates away
+/* Consumed-seeds list. Each challenge link is single-use: the moment
+   the recipient hits Accept, we record the seed here. Subsequent opens
+   of the same URL (refresh, share-sheet re-tap, manual paste) get the
+   "already played" overlay instead of a fresh intro + fresh timer.
+   This is the only anti-replay defense in a fully serverless design —
+   localStorage-clearing bypasses it, but the bar is high enough to
+   stop the casual "refresh to retry" cheat path.
+   Stored as { [seed]: timestamp } so we can LRU-evict if the list
+   grows unbounded.                                                  */
+const CZ_CONSUMED_KEY='oddio_cz_consumed';
+const CZ_CONSUMED_CAP=200; // entries before LRU-eviction kicks in
+/* Per-seed challenge solve snapshots. Daily solves get saved into
+   oddio_history; challenges are intentionally NOT in that store
+   (they don't count toward streaks). But we still want a refresh
+   after a challenge solve to land back on the win screen instead
+   of the dead-link overlay, so we keep a parallel registry of
+   completed challenges keyed by seed. Snapshot shape mirrors the
+   daily history record + the challenge-specific st.cz* fields.   */
+const CZ_SOLVES_KEY='oddio_cz_solves';
+const CZ_SOLVES_CAP=200;
 
 /* Pick a fresh challenge seed in [0x80000000, 0xBFFFFFFF].
    Bit 31 set + only 30 random low bits means the +50 retry
@@ -2022,6 +2086,61 @@ function czSetName(n){try{n?localStorage.setItem(CZ_NAME_KEY,n):localStorage.rem
 function czSaveActive(cz){try{localStorage.setItem(CZ_ACTIVE_KEY,JSON.stringify(cz));}catch(e){}}
 function czClearActive(){try{localStorage.removeItem(CZ_ACTIVE_KEY);}catch(e){}}
 
+/* Per-device "I've already used this challenge link" registry. The
+   intro flow consults czIsConsumed() before letting the player accept;
+   acceptChallenge() calls czMarkConsumed() the moment the player
+   commits, so a subsequent refresh, share-sheet re-tap, or pasted URL
+   shows the "already played" overlay instead of a fresh attempt.
+   Stored object-shaped, not array, for O(1) lookup. Timestamps drive
+   LRU-eviction once the list exceeds CZ_CONSUMED_CAP entries — the
+   absolute count is arbitrary; pick it generous enough that a normal
+   social player won't bump into it in a reasonable timeframe.       */
+function czLoadConsumed(){
+  try{const c=JSON.parse(localStorage.getItem(CZ_CONSUMED_KEY)||'{}');return(c&&typeof c==='object')?c:{};}
+  catch(e){return {};}
+}
+function czIsConsumed(seed){return !!czLoadConsumed()[(seed>>>0)];}
+function czMarkConsumed(seed){
+  try{
+    const c=czLoadConsumed();
+    c[(seed>>>0)]=Date.now();
+    const keys=Object.keys(c);
+    if(keys.length>CZ_CONSUMED_CAP){
+      /* Evict oldest entries to keep storage bounded. We don't care
+         about absolute precision here — the list is per-device and
+         exists only to gate replay, so dropping a few very-old seeds
+         only re-enables them if the same link gets re-opened years
+         later (unlikely; and worst case, a benign re-play).         */
+      keys.sort((a,b)=>c[a]-c[b]);
+      for(let i=0;i<keys.length-CZ_CONSUMED_CAP;i++)delete c[keys[i]];
+    }
+    localStorage.setItem(CZ_CONSUMED_KEY,JSON.stringify(c));
+  }catch(e){}
+}
+
+/* Saved challenge solves. doWin() writes here on a challenge solve;
+   the boot router reads here BEFORE consulting the consumed registry,
+   so a refresh after solving restores the win UI instead of showing
+   the dead-link overlay. Same LRU shape as the consumed list — every
+   snapshot carries a `savedAt` for eviction order.                  */
+function czLoadSolves(){
+  try{const s=JSON.parse(localStorage.getItem(CZ_SOLVES_KEY)||'{}');return(s&&typeof s==='object')?s:{};}
+  catch(e){return {};}
+}
+function czLoadSolve(seed){return czLoadSolves()[(seed>>>0)]||null;}
+function czSaveSolve(snap){
+  try{
+    const all=czLoadSolves();
+    all[(snap.seed>>>0)]=snap;
+    const keys=Object.keys(all);
+    if(keys.length>CZ_SOLVES_CAP){
+      keys.sort((a,b)=>(all[a].savedAt||0)-(all[b].savedAt||0));
+      for(let i=0;i<keys.length-CZ_SOLVES_CAP;i++)delete all[keys[i]];
+    }
+    localStorage.setItem(CZ_SOLVES_KEY,JSON.stringify(all));
+  }catch(e){}
+}
+
 /* ── Modal controllers ────────────────────────────────────── */
 function openChallengeCreate(){
   // Prefill the name from last use so returning senders don't
@@ -2056,24 +2175,67 @@ function startNewChallenge(){
 
 /* Receiver flow: show intro overlay with the challenger's info
    and target time. The puzzle is NOT loaded yet — we wait for
-   "Accept" so the timer doesn't start until the player is ready. */
+   "Accept" so the timer doesn't start until the player is ready.
+   If the seed is in the consumed registry (player has already
+   accepted this link once), we re-render the same overlay in
+   "already played" mode: same chrome, swapped copy, single
+   Back-to-Daily action. Keeps DOM count down vs. a parallel
+   overlay element.                                              */
 let _pendingCz=null;
 function showChallengeIntro(cz){
   _pendingCz=cz;
+  const labelEl=document.getElementById('cz-intro-label');
+  const titleEl=document.getElementById('cz-intro-title');
   const fromEl=document.getElementById('cz-intro-from');
   const tgtEl=document.getElementById('cz-intro-target-val');
   const wrap=document.getElementById('cz-intro-target');
-  if(cz.name){
-    fromEl.innerHTML=`<strong>${escapeHTML(cz.name)}</strong> challenged you to a one-off puzzle.`;
-  }else{
-    fromEl.innerHTML=`A friend challenged you to a one-off puzzle.`;
-  }
-  if(cz.timeMs!=null){
-    tgtEl.textContent=fmtTimeUnit(cz.timeMs);
-    wrap.style.display='';
-  }else{
-    // Seed-only link — no target time. Hide the "time to beat" block.
+  const playBtn=document.getElementById('cz-intro-play');
+  const helpBtn=document.getElementById('cz-intro-help');
+  const skipBtn=document.getElementById('cz-intro-skip');
+  if(czIsConsumed(cz.seed)){
+    /* Dead-link path. The player has already accepted this seed once
+       on this device — re-purpose the overlay to explain why and
+       offer the one sensible action (return to daily). We do NOT
+       offer "play again" even as a secondary option, since that
+       reintroduces the score-optimisation cheat we're here to block. */
+    labelEl.textContent='⚔️ ALREADY PLAYED';
+    titleEl.textContent='Challenge already used';
+    /* Name the friend if we have it — gives the player context for
+       why they're seeing this (so it doesn't look like a generic
+       error). Otherwise stay neutral.                                */
+    if(cz.name){
+      fromEl.innerHTML=`You've already played <strong>${escapeHTML(cz.name)}</strong>'s challenge. Each link can only be opened once — that's how the head-to-head stays fair.`;
+    }else{
+      fromEl.innerHTML=`You've already played this challenge. Each link can only be opened once — that's how the head-to-head stays fair.`;
+    }
     wrap.style.display='none';
+    playBtn.style.display='none';
+    helpBtn.style.display='none';
+    /* Reuse the existing top-right Skip button as the only action.
+       It already calls declineChallenge, which (post-fix) handles
+       restoring whatever the daily state should be underneath.    */
+    skipBtn.textContent='Back to Daily';
+  }else{
+    /* Standard receive flow. Reset every node we might have mutated
+       in the consumed branch — the overlay is sticky across page
+       navigations within a session and could otherwise leak state. */
+    labelEl.textContent='⚔️ CHALLENGE RECEIVED';
+    titleEl.textContent="You've been challenged";
+    if(cz.name){
+      fromEl.innerHTML=`<strong>${escapeHTML(cz.name)}</strong> challenged you to a one-off puzzle.`;
+    }else{
+      fromEl.innerHTML=`A friend challenged you to a one-off puzzle.`;
+    }
+    if(cz.timeMs!=null){
+      tgtEl.textContent=fmtTimeUnit(cz.timeMs);
+      wrap.style.display='';
+    }else{
+      // Seed-only link — no target time. Hide the "time to beat" block.
+      wrap.style.display='none';
+    }
+    playBtn.style.display='';
+    helpBtn.style.display='';
+    skipBtn.textContent='Skip →';
   }
   document.getElementById('cz-intro').classList.add('show');
 }
@@ -2082,6 +2244,13 @@ function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function acceptChallenge(){
   document.getElementById('cz-intro').classList.remove('show');
   if(!_pendingCz)return;
+  /* Mark consumed BEFORE loadChallenge runs. Order matters: if the
+     player solves and the URL gets rewritten to include their time,
+     a subsequent refresh re-parses that URL and re-enters this flow
+     — we want the consumed check to fire on that refresh. Marking
+     here also means a tab-crash between Accept and first move still
+     burns the attempt, which is the conservative anti-replay choice. */
+  czMarkConsumed(_pendingCz.seed);
   const cz={..._pendingCz,creator:false};
   czSaveActive(cz);
   _pendingCz=null;
@@ -2098,9 +2267,25 @@ function declineChallenge(){
   _pendingCz=null;
   czSetHash('');
   czClearActive();
-  // Daily timer was deferred while the intro covered the board.
-  // Start it now so the player isn't penalised for the intro.
-  if(st&&st.timerPending&&!st.solved)startTimer();
+  /* Restore the underlying daily view. Two paths land here:
+     (a) Fresh boot with #oc=… — loadDaily already ran underneath the
+         intro, so #win is in the right state. If solved, showWinUI
+         already added 'show'; calling it again is a no-op overlay-wise
+         but cheap.
+     (b) In-app deep link via _oddioHandleAppUrl while sitting on the
+         post-solve win screen — that handler strips #win.show before
+         showing the intro, so on Skip we must put it back, otherwise
+         the player sees a bare board with no win card or countdown.
+     We can't just call loadDaily() unconditionally (that would wipe
+     an in-progress mid-game session in case (b) variant where the
+     deep-link arrived during play). So branch on st.solved.        */
+  if(st&&st.solved){
+    showWinUI();
+  }else if(st&&st.timerPending){
+    // Daily timer was deferred while the intro covered the board.
+    // Start it now so the player isn't penalised for the intro.
+    startTimer();
+  }
 }
 
 /* Leave challenge mode mid-play (or post-solve). Same idea as
@@ -2128,6 +2313,7 @@ function loadChallenge(cz){
   document.body.classList.remove('has-solved-puzzle');
   // Clear any leftover win UI from a prior puzzle.
   document.getElementById('win').classList.remove('show','board-revealed','challenge','beat','lost','tied','has-vs');
+  document.getElementById('og').classList.remove('board-revealed');
   document.getElementById('win-banner').classList.remove('show');
   // Show the in-game banner with challenger info
   const bs=document.getElementById('cz-banner-sub');
@@ -2172,6 +2358,64 @@ function loadChallenge(cz){
   build();
   // Suppress the daily countdown — irrelevant in challenge mode.
   if(_countdownTimer){clearInterval(_countdownTimer);_countdownTimer=null;}
+}
+
+/* Rebuild a completed challenge from a saved snapshot, then jump
+   straight to the challenge win UI. Parallel to the "rec.solved"
+   branch in loadPuzzle — same shape, just challenge-flavoured.
+   No timer, no banner, no intro overlay; the player is being
+   shown a finished result, not asked to play.                   */
+function restoreChallengeFromSnapshot(rec){
+  puzzleNum=-1;                     // challenges aren't numbered
+  _loadedAsToday=false;             // don't midnight-rollover this view
+  /* Clear any leftover daily/challenge chrome from a prior session.
+     showChallengeWinUI re-adds 'has-solved-puzzle' so the ⚔️ header
+     button becomes available again from the win screen.            */
+  document.body.classList.remove('has-solved-puzzle');
+  document.getElementById('cz-banner').classList.remove('show');
+  document.getElementById('win').classList.remove('show','board-revealed','challenge','beat','lost','tied','has-vs');
+  document.getElementById('og').classList.remove('board-revealed');
+  document.getElementById('win-banner').classList.remove('show');
+  // Challenge header label — same as loadChallenge sets
+  const lbl=document.getElementById('lvllbl');
+  lbl.textContent='⚔️ CHALLENGE';
+  lbl.style.color='#B388FF';
+  // Reconstitute st from snapshot
+  initSt({vals:rec.vals,solVals:rec.solVals,locked:rec.locked,rp:rec.rp,cp:rec.cp,sgs:rec.sgs});
+  st.startVals=rec.startVals;
+  st.moves=rec.moves;
+  st.minMoves=rec.minMoves;
+  st.hintsUsed=rec.hintsUsed||0;
+  st.isChallenge=true;
+  st.czSeed=rec.seed;
+  st.czCreator=!!rec.czCreator;
+  st.czCreatorName=rec.czCreatorName||null;
+  st.czTheirTimeMs=(rec.czTheirTimeMs!=null)?rec.czTheirTimeMs:null;
+  st.czTheirName=rec.czTheirName||null;
+  build();
+  /* IMPORTANT: build() calls startTimer() at the end, which sets
+     st.solveTime=null and st.startTime=now. We must overwrite these
+     AFTER build() returns or the saved solve time gets clobbered.
+     Same pattern as the daily restore path in loadPuzzle.          */
+  if(timerRAF){cancelAnimationFrame(timerRAF);timerRAF=null;}
+  st.solved=true;
+  st.solveTime=rec.timeMs;
+  st.startTime=null;
+  st.timerPending=false;
+  document.getElementById('mvcnt').textContent=st.moves;
+  updateTimerDisplay(st.solveTime);
+  document.getElementById('msg').textContent='';
+  /* Static "won" styling on the tiles so the board behind the
+     overlay looks solved if/when the user toggles Show Board.
+     No animation — that would be a fake celebration on reload. */
+  document.querySelectorAll('.tile').forEach(el=>{
+    el.style.transition='none';
+    el.style.borderColor='rgba(76,217,100,.8)';
+    el.style.borderStyle='solid';
+  });
+  // Suppress the daily countdown — irrelevant in challenge mode.
+  if(_countdownTimer){clearInterval(_countdownTimer);_countdownTimer=null;}
+  showChallengeWinUI();
 }
 
 /* ── Win UI for challenges ───────────────────────────────────
@@ -2651,13 +2895,23 @@ if(!hasVisited())document.getElementById('tut').classList.add('show');
      3. Otherwise         → normal daily entry.                  */
 const _bootCz=czParseURL();
 if(_bootCz){
-  /* Show the intro overlay FIRST (before loadDaily builds the
-     board) so that startTimer's deferred-overlay check picks it
-     up and the daily timer doesn't tick under the intro. If a
-     first-time tutorial is also showing, we chain: tutorial
-     dismisses → intro shows → original tutSkip's startTimer
-     defers to the now-visible intro.                            */
-  if(document.getElementById('tut').classList.contains('show')){
+  /* Priority order:
+     1. Saved solve for this seed → restore the win screen directly.
+        Beats both the intro and the consumed overlay; the player has
+        already finished this challenge and is just revisiting it.
+        Skips loadDaily — the challenge win UI replaces the daily view.
+     2. Otherwise show the intro (which itself routes to the
+        "already played" variant if the seed is in the consumed list
+        without a saved solve — i.e. accepted but abandoned). The
+        intro overlay must be revealed BEFORE loadDaily builds the
+        board so startTimer's deferred-overlay check picks it up and
+        the daily timer doesn't tick under the intro. First-launch
+        tutorial chains: tutorial dismisses → intro shows → original
+        tutSkip's startTimer defers to the now-visible intro.        */
+  const _bootSaved=czLoadSolve(_bootCz.seed);
+  if(_bootSaved){
+    restoreChallengeFromSnapshot(_bootSaved);
+  }else if(document.getElementById('tut').classList.contains('show')){
     const origSkip=tutSkip;
     window.tutSkip=function(){
       // Reveal intro BEFORE the original tutSkip runs, so its
@@ -2665,10 +2919,11 @@ if(_bootCz){
       showChallengeIntro(_bootCz);
       origSkip.apply(this,arguments);
     };
+    loadDaily();
   }else{
     showChallengeIntro(_bootCz);
+    loadDaily();
   }
-  loadDaily();
 }else{
   loadDaily();
 }
@@ -2680,47 +2935,40 @@ if(_bootCz){
    run so the initial scale picks the right transform-origin. */
 if(window.Capacitor)document.body.classList.add('cap');
 
-/* ── Try to launch the installed Oddio app on mobile web ─────
-   When a mobile user lands here and they already have the native
-   build installed, hand off to it. This is the fallback path for
-   visits that don't go through a Universal Link / App Link (e.g.
-   the user typed the URL, opened a bookmark, or the OS link
-   recognition was disabled). For tapped links from other apps,
-   Universal Links / App Links should fire first and we never get
-   here.
+/* ── Open-in-app banner ──────────────────────────────────────
+   iOS Safari was previously handling JS scheme redirects via its
+   own "Open in …?" prompt, but Android Chrome silently blocks all
+   programmatic scheme/intent launches without a user gesture
+   (anti-abuse). A tappable button IS a gesture and works on both
+   platforms uniformly.
 
-   Custom-scheme redirects have OS-level prompts on iOS Safari
-   the first time. To keep that prompt from reappearing on every
-   reload, we set a sessionStorage flag — a user who already chose
-   "stay in browser" by dismissing the prompt won't be re-asked
-   for the rest of the session.
-
-   The location hash is preserved so a challenge link
-   (https://danielgerberapps.github.io/oddio_beta.html#oc=...) opens
-   to the same challenge inside the app rather than the daily.       */
-(function tryLaunchApp(){
-  if(window.Capacitor)return; // already inside the app
+   Banner is shown only when: not already inside the app, on
+   iOS/Android, and not previously dismissed this session.        */
+(function showOpenInAppBanner(){
+  if(window.Capacitor)return;
   const ua=navigator.userAgent||'';
-  // Exclude iPad-on-macOS which reports as Macintosh+Touch; the
-  // pure Macintosh string should NOT trigger an app launch.
   const isIOS=/iPhone|iPad|iPod/.test(ua)||(ua.includes('Macintosh')&&navigator.maxTouchPoints>1);
   const isAndroid=/Android/.test(ua);
   if(!isIOS&&!isAndroid)return;
-  try{
-    if(sessionStorage.getItem('oddio_app_launch_tried'))return;
-    sessionStorage.setItem('oddio_app_launch_tried','1');
-  }catch(e){/* private mode etc — just attempt once anyway */}
-  // Build the deep link. The scheme below must be the one registered
-  // in the Capacitor app (capacitor.config.json -> server.androidScheme,
-  // and iOS Info.plist -> CFBundleURLSchemes). The host portion after
-  // the scheme is arbitrary for custom-scheme URLs — the app routes
-  // on the hash, not the host — but matching the canonical web host
-  // keeps logs and debugging readable. Hash carries challenge state.
+  try{if(sessionStorage.getItem('oddio_app_banner_dismissed'))return;}catch(e){}
   const path=location.hash||'';
-  const deepLink='oddio://danielgerberapps.github.io/'+path;
-  // location.href is more reliable across browsers than an iframe
-  // hack for custom-scheme launches in 2025.
-  window.location.href=deepLink;
+  // Use intent:// on Android (Chrome's official cross-app launcher,
+  // graceful no-op if app missing). Use oddio:// on iOS (Safari's
+  // prompt-and-launch works perfectly from user taps).
+  const href=isAndroid
+    ?'intent://danielgerberapps.github.io/'+encodeURIComponent(path)+
+      '#Intent;scheme=oddio;package=com.oddio.app;end'
+    :'oddio://danielgerberapps.github.io/'+path;
+  const bar=document.createElement('div');
+  bar.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#B388FF;color:#1A0D33;font-family:system-ui,-apple-system,sans-serif;font-size:13px;font-weight:600;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.3);padding-top:calc(10px + env(safe-area-inset-top))';
+  bar.innerHTML='<span style="flex:1">Have the Oddio app?</span>'+
+                '<a href="'+href+'" style="background:#1A0D33;color:#B388FF;padding:6px 14px;border-radius:6px;text-decoration:none;font-weight:700">Open in app</a>'+
+                '<button style="background:none;border:none;color:#1A0D33;font-size:18px;cursor:pointer;padding:0 4px;opacity:.6">✕</button>';
+  bar.querySelector('button').onclick=()=>{
+    bar.remove();
+    try{sessionStorage.setItem('oddio_app_banner_dismissed','1');}catch(e){}
+  };
+  document.body.appendChild(bar);
 })();
 
 // Defer to next frame so the just-built board has settled into layout
