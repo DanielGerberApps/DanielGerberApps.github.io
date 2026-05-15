@@ -1499,7 +1499,7 @@ function shareWin(){
   // ones that ignore the share API's separate `url` field — preserves
   // it. This matches Wordle-style game shares: a single self-contained
   // block recipients can paste anywhere.
-  const text=`Oddio #${puzzleNum} · ${shortDate()} · ⏱️ ${fmtTimeUnit(finalTime)}\n${fmtTimeUnit(st.solveTime)} solve · ${st.moves} move${st.moves!==1?'s':''}${perfMark} (fewest: ${minMoves}) · 💡 ${hints} hint${hints!==1?'s':''}\n${streakLine}\n${grid}\nhttps://danielgerberapps.github.io/oddio_beta.html`;
+  const text=`Oddio #${puzzleNum} · ${shortDate()} · ⏱️ ${fmtTimeUnit(finalTime)}\n${fmtTimeUnit(st.solveTime)} solve · ${st.moves} move${st.moves!==1?'s':''}${perfMark} (fewest: ${minMoves}) · 💡 ${hints} hint${hints!==1?'s':''}\n${streakLine}\n${grid}\n${ODDIO_URL}`;
   const toast=document.getElementById('share-toast');
   const btn=document.getElementById('share-btn');
   nativeShare({title:`Oddio #${puzzleNum}`,text}).then(outcome=>{
@@ -1586,6 +1586,13 @@ const EPOCH_Y=2026, EPOCH_M=4 /* May, 0-indexed */, EPOCH_D=8;  // puzzle #1 = l
 const DAILY_KEY='oddio_daily';        // legacy: today-only snapshot (migrated on load)
 const HISTORY_KEY='oddio_history';    // new: { [puzzleNum]: snapshot } — every solved puzzle
 const STREAK_KEY='oddio_streak';
+/* Canonical public web URL — used for all share text and the
+   challenge-link base. Hardcoded rather than derived from
+   location.origin/pathname because in the Capacitor WebView those
+   resolve to "capacitor://localhost/...", which is useless when
+   the URL gets shared with another person. If we ever move hosts,
+   change this one line.                                            */
+const ODDIO_URL='https://danielgerberapps.github.io/oddio_beta.html';
 
 function todayKey(){
   const d=new Date();
@@ -2250,7 +2257,7 @@ function shareChallenge(){
   const myFinal=st.czMyFinalMs;
   let title,text;
   if(st.czCreator){
-    const link=location.origin+location.pathname+'#'+czEncode(st.czSeed,myFinal,st.czCreatorName);
+    const link=ODDIO_URL+'#'+czEncode(st.czSeed,myFinal,st.czCreatorName);
     const who=st.czCreatorName?`${st.czCreatorName} solved`:'I solved';
     title='Oddio Challenge';
     text=`⚔️ Oddio Challenge\n${who} this in ${fmtTimeUnit(myFinal)}. Beat my time?\n\n${link}`;
@@ -2269,7 +2276,7 @@ function shareChallenge(){
         ?`${themSubj} won by ${fmtTimeUnit(diff)}`
         :`Dead tied — ${fmtTimeUnit(myFinal)}`;
     title='Oddio Challenge — Result';
-    text=`⚔️ Oddio Challenge — RESULT\n${them}: ${fmtTimeUnit(st.czTheirTimeMs)} · ${me}: ${fmtTimeUnit(myFinal)}\n${verdict}\n\nhttps://danielgerberapps.github.io/oddio_beta.html`;
+    text=`⚔️ Oddio Challenge — RESULT\n${them}: ${fmtTimeUnit(st.czTheirTimeMs)} · ${me}: ${fmtTimeUnit(myFinal)}\n${verdict}\n\n${ODDIO_URL}`;
   }
   const btn=document.getElementById('cz-share-btn');
   const orig=btn.textContent;
