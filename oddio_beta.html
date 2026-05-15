@@ -3,10 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- TODO: replace "[Your Name]" with the legal copyright holder
+     (your full legal name, or an LLC/company name if you have one).
+     The notice isn't required for protection in the US, but it
+     strengthens infringement claims by establishing constructive
+     notice. Register the work at copyright.gov before public launch
+     to unlock statutory damages and attorney's fees in any future
+     suit — without registration you can only sue for actual damages. -->
+<meta name="copyright" content="© 2026 [Your Name]. All rights reserved.">
+<meta name="author" content="[Your Name]">
 <title>Oddio — Oddly Addicting</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 body{background:#070D18;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,sans-serif;overflow:hidden}
+/* Capacitor / native-app mode. The web build is happy centered in
+   the viewport, but on iOS (and Android) the WebView covers the
+   whole display including the notch, dynamic island, and home
+   indicator. Anchor to the top and pad with the OS-reported safe
+   area so chrome doesn't sit under hardware. `env()` evaluates to
+   0 on platforms without the inset, so it's a no-op fallback.    */
+body.cap{align-items:flex-start;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+/* Copyright footer — small, low-contrast, sits below the controls.
+   Static year reflects year-of-first-publication (the correct legal
+   convention), not the current calendar year. */
+#copyright{font-size:9px;color:rgba(234,242,255,.25);text-align:center;margin-top:8px;letter-spacing:.5px;user-select:none;font-weight:500}
+#copyright a{color:inherit;text-decoration:none}
 #og{background:#0C1523;border-radius:16px;padding:14px;color:#EAF2FF;position:relative;display:inline-block;min-width:320px}
 #hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 #logo{font-size:17px;font-weight:600;letter-spacing:3px}
@@ -252,7 +273,14 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
   color:rgba(179,136,255,.75);
   border-color:rgba(179,136,255,.25);
   background:rgba(179,136,255,.06);
+  /* Hidden by default. The button creates a new challenge (which
+     loads a new puzzle), so if pressed mid-daily it would cancel
+     out and let the player game the timer by opening/closing the
+     modal as a pause button. Body class flips this back on once
+     the current puzzle is solved — see has-solved-puzzle below. */
+  display:none;
 }
+body.has-solved-puzzle .dbt.cz-btn{display:revert}
 .dbt.cz-btn:hover{
   color:#B388FF;
   border-color:rgba(179,136,255,.5);
@@ -350,6 +378,16 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
   width:100%;max-width:240px;letter-spacing:.4px;
 }
 #cz-intro-play:active{transform:scale(.97)}
+/* Subtle secondary action — opens the tutorial without leaving
+   the challenge flow. Sits just above the primary CTA so first-
+   time players have an obvious affordance.                       */
+#cz-intro-help{
+  background:none;border:none;color:rgba(234,242,255,.5);
+  font-size:11px;cursor:pointer;padding:6px 10px;margin-bottom:8px;
+  letter-spacing:.3px;text-decoration:underline;
+  text-decoration-color:rgba(234,242,255,.2);text-underline-offset:3px;
+}
+#cz-intro-help:hover{color:rgba(234,242,255,.85)}
 
 /* Win UI variant for challenges. Reuses the existing #win
    container but conditionally hides streak / countdown / archive
@@ -441,6 +479,12 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
     </button>
   </div>
 
+  <!-- Copyright footer. TODO: replace "[Your Name]" with the legal
+       holder (you or your LLC). Year is year-of-first-publication and
+       stays static; update only on substantial new releases (e.g.
+       "© 2026–2027 [Your Name]"). -->
+  <div id="copyright">© 2026 [Your Name] · All rights reserved</div>
+
   <div id="win">
     <div id="win-card">
       <h2>Solved</h2>
@@ -519,6 +563,7 @@ body{background:#070D18;display:flex;align-items:center;justify-content:center;m
         <span id="cz-intro-target-val">—</span>
       </div>
     </div>
+    <button id="cz-intro-help" onclick="openTutorialFromIntro()">How to play ❓</button>
     <button id="cz-intro-play" onclick="acceptChallenge()">Accept &amp; Play →</button>
   </div>
   <!-- ── Tutorial overlay ── -->
@@ -1138,7 +1183,41 @@ function _wireCapacitorAppLifecycle(){
   try{
     App.addListener('pause',pauseTimer);
     App.addListener('resume',resumeTimer);
+    /* Deep-link / Universal Link / App Link handler. Fires whenever
+       the OS hands the app a URL — either because a custom scheme
+       (oddio://...) was tapped or a Universal/App Link to the canonical
+       web host (danielgerberapps.github.io/oddio_beta.html) was
+       followed. Also handles the cold-start case via the one-shot
+       getLaunchUrl() call, since the listener can register too late
+       to catch the launching URL on iOS.                             */
+    App.addListener('appUrlOpen',_oddioHandleAppUrl);
+    if(App.getLaunchUrl){
+      App.getLaunchUrl().then(r=>{if(r&&r.url)_oddioHandleAppUrl(r);}).catch(()=>{});
+    }
   }catch(e){/* plugin shape varied across versions — fail soft */}
+}
+
+/* Routes an incoming deep-link URL into the challenge intro.
+   Expects URLs whose hash carries the challenge payload, e.g.
+   oddio://danielgerberapps.github.io/#oc=10l9ty8.xtg.Alice   (custom scheme)
+   https://danielgerberapps.github.io/oddio_beta.html#oc=...  (Universal/App Link)
+   We just need the hash; the rest is ignored.                     */
+function _oddioHandleAppUrl(ev){
+  const url=ev&&ev.url;
+  if(!url)return;
+  const i=url.indexOf('#');
+  if(i<0)return; // no hash — nothing to route on
+  const hash=url.slice(i); // includes the leading '#'
+  // Reflect the hash into location so the existing czParseURL()
+  // logic and a subsequent refresh both see it. replaceState
+  // avoids polluting the navigation stack.
+  try{history.replaceState(null,'',hash);}catch(e){location.hash=hash;}
+  const cz=czParseURL();
+  if(!cz)return;
+  // If the win UI is up from a previous solve, dismiss it — the
+  // user is being routed somewhere new.
+  document.getElementById('win').classList.remove('show','challenge','beat','lost','tied','has-vs');
+  showChallengeIntro(cz);
 }
 _wireCapacitorAppLifecycle();
 window.addEventListener('load',_wireCapacitorAppLifecycle);
@@ -1420,7 +1499,7 @@ function shareWin(){
   // ones that ignore the share API's separate `url` field — preserves
   // it. This matches Wordle-style game shares: a single self-contained
   // block recipients can paste anywhere.
-  const text=`Oddio #${puzzleNum} · ${shortDate()} · ⏱️ ${fmtTimeUnit(finalTime)}\n${fmtTimeUnit(st.solveTime)} solve · ${st.moves} move${st.moves!==1?'s':''}${perfMark} (fewest: ${minMoves}) · 💡 ${hints} hint${hints!==1?'s':''}\n${streakLine}\n${grid}\nhttps://oddio.game`;
+  const text=`Oddio #${puzzleNum} · ${shortDate()} · ⏱️ ${fmtTimeUnit(finalTime)}\n${fmtTimeUnit(st.solveTime)} solve · ${st.moves} move${st.moves!==1?'s':''}${perfMark} (fewest: ${minMoves}) · 💡 ${hints} hint${hints!==1?'s':''}\n${streakLine}\n${grid}\nhttps://danielgerberapps.github.io/oddio_beta.html`;
   const toast=document.getElementById('share-toast');
   const btn=document.getElementById('share-btn');
   nativeShare({title:`Oddio #${puzzleNum}`,text}).then(outcome=>{
@@ -1630,6 +1709,8 @@ function showWinUI(){
   // "Challenge Set" / "You Win 🏆" / etc. from a previous challenge,
   // and we don't want that leaking into a daily win screen.
   document.querySelector('#win-card h2').textContent='Solved';
+  // Unlock the ⚔️ header button — no live timer to game now.
+  document.body.classList.add('has-solved-puzzle');
   // Hints used — fall back to 0 in the rare case st.hintsUsed
   // was never set (shouldn't happen post-feature, but safe).
   const hints=(st.hintsUsed!=null)?st.hintsUsed:(3-hintCharges);
@@ -1708,6 +1789,10 @@ function startCountdown(){
    so archive loads don't pollute the "played today" stat.       */
 function loadPuzzle(num){
   puzzleNum=num;
+  /* Re-hide the ⚔️ header button — a new puzzle is loading so by
+     default the player isn't in a solved state. showWinUI() will
+     re-add this class if the puzzle turns out to be already solved. */
+  document.body.classList.remove('has-solved-puzzle');
   /* Clear any leftover challenge-mode UI from a prior session.
      This is the canonical way to re-enter daily mode — every
      "Back to Daily" path funnels through here.                  */
@@ -2030,6 +2115,10 @@ function loadChallenge(cz){
   _czState=cz;
   puzzleNum=-1;            // challenges are not numbered — sentinel
   _loadedAsToday=false;    // never rollover-reload a challenge view
+  /* Re-hide the ⚔️ header button — a fresh challenge puzzle starts
+     unsolved, so the player shouldn't be able to bail into another
+     challenge mid-play. showChallengeWinUI() restores it on solve. */
+  document.body.classList.remove('has-solved-puzzle');
   // Clear any leftover win UI from a prior puzzle.
   document.getElementById('win').classList.remove('show','board-revealed','challenge','beat','lost','tied','has-vs');
   document.getElementById('win-banner').classList.remove('show');
@@ -2086,6 +2175,8 @@ function showChallengeWinUI(){
   const hints=(st.hintsUsed!=null)?st.hintsUsed:(3-hintCharges);
   const myFinal=computeFinalTimeMs(st.solveTime,st.moves,st.minMoves,hints);
   st.czMyFinalMs=myFinal;
+  // Unlock the ⚔️ header button — no live timer to game now.
+  document.body.classList.add('has-solved-puzzle');
   // Hide daily-only chrome via a single class on #win
   const winEl=document.getElementById('win');
   winEl.classList.add('show','challenge');
@@ -2178,7 +2269,7 @@ function shareChallenge(){
         ?`${themSubj} won by ${fmtTimeUnit(diff)}`
         :`Dead tied — ${fmtTimeUnit(myFinal)}`;
     title='Oddio Challenge — Result';
-    text=`⚔️ Oddio Challenge — RESULT\n${them}: ${fmtTimeUnit(st.czTheirTimeMs)} · ${me}: ${fmtTimeUnit(myFinal)}\n${verdict}\n\nhttps://oddio.game`;
+    text=`⚔️ Oddio Challenge — RESULT\n${them}: ${fmtTimeUnit(st.czTheirTimeMs)} · ${me}: ${fmtTimeUnit(myFinal)}\n${verdict}\n\nhttps://danielgerberapps.github.io/oddio_beta.html`;
   }
   const btn=document.getElementById('cz-share-btn');
   const orig=btn.textContent;
@@ -2437,10 +2528,30 @@ function tutRender(){
 function tutNext(){
   if(tutStep<TUT_STEPS.length-1){tutStep++;tutRender();}else tutSkip();
 }
+/* One-shot callback invoked when the tutorial is dismissed.
+   Used by flows that want to layer the tutorial over their own
+   modal and resume that modal afterward (e.g. opening Help from
+   the challenge intro). Fires BEFORE startTimer so the callback
+   can re-show another deferral overlay if it needs to.            */
+let _tutDismissCb=null;
 function tutSkip(){
   document.getElementById('tut').classList.remove('show');
   markVisited();
+  if(_tutDismissCb){const cb=_tutDismissCb;_tutDismissCb=null;cb();}
   if(st&&st.timerPending)startTimer();
+}
+
+/* Open the tutorial from inside the challenge-intro modal so
+   first-time recipients (and anyone curious) can read the rules
+   without losing their place in the challenge flow. Re-shows the
+   intro when the tutorial closes via the dismiss callback. */
+function openTutorialFromIntro(){
+  const intro=document.getElementById('cz-intro');
+  intro.classList.remove('show');
+  _tutDismissCb=()=>intro.classList.add('show');
+  tutStep=0;
+  tutRender();
+  document.getElementById('tut').classList.add('show');
 }
 
 /* ── First-launch tutorial gate ───────────────────────────────
@@ -2483,13 +2594,31 @@ function fitToViewport(){
   // Reset before measuring so we read the natural size, not the scaled one
   og.style.transform='';og.style.transformOrigin='';
   const w=og.offsetWidth,h=og.offsetHeight;if(!w||!h)return;
-  const vw=window.innerWidth,vh=window.innerHeight;
+  /* Available viewport, minus any safe-area padding we put on body
+     for native (Capacitor) builds. Without this subtraction, the
+     scale calc thinks it has the full window.innerHeight to work
+     with and the bottom of the game tucks under the home indicator. */
+  const bs=getComputedStyle(document.body);
+  const padTop=parseFloat(bs.paddingTop)||0;
+  const padBot=parseFloat(bs.paddingBottom)||0;
+  const vw=window.innerWidth,vh=window.innerHeight-padTop-padBot;
   const margin=6;
   const fit=Math.min((vw-margin*2)/w,(vh-margin*2)/h);
   const isMobile=vw<700;
-  const scale=isMobile?Math.min(fit,1.8):Math.min(fit,1);
+  /* Native-app mode (Capacitor) gets the mobile scale ceiling even
+     when the viewport is wide. Tablets report vw of 800-1280, which
+     would otherwise cap scale at 1.0× and leave a phone-sized card
+     centered on an 11" screen. Browser desktop stays at 1.0× because
+     a desktop browser window is a different context — the user can
+     resize it, and oversized chrome on a 27" monitor looks worse than
+     a comfortably-sized one. */
+  const isNative=document.body.classList.contains('cap');
+  const scale=(isMobile||isNative)?Math.min(fit,1.8):Math.min(fit,1);
   og.style.transform=`scale(${scale})`;
-  og.style.transformOrigin='center center';
+  /* In native (top-anchored) mode the layout box sits at the top of
+     body, so scale from the top edge — otherwise scale-down would
+     visually drift up off the safe-area padding. Web stays centered. */
+  og.style.transformOrigin=document.body.classList.contains('cap')?'top center':'center center';
 }
 let _fitTimer;
 window.addEventListener('resize',()=>{clearTimeout(_fitTimer);_fitTimer=setTimeout(fitToViewport,30);});
@@ -2536,6 +2665,56 @@ if(_bootCz){
 }else{
   loadDaily();
 }
+
+/* Native-app detection. When loaded through Capacitor (or any
+   environment that injects window.Capacitor), top-anchor the game
+   inside the safe area. The CSS rules on body.cap do the heavy
+   lifting; here we just opt in. Set before fitToViewport's first
+   run so the initial scale picks the right transform-origin. */
+if(window.Capacitor)document.body.classList.add('cap');
+
+/* ── Try to launch the installed Oddio app on mobile web ─────
+   When a mobile user lands here and they already have the native
+   build installed, hand off to it. This is the fallback path for
+   visits that don't go through a Universal Link / App Link (e.g.
+   the user typed the URL, opened a bookmark, or the OS link
+   recognition was disabled). For tapped links from other apps,
+   Universal Links / App Links should fire first and we never get
+   here.
+
+   Custom-scheme redirects have OS-level prompts on iOS Safari
+   the first time. To keep that prompt from reappearing on every
+   reload, we set a sessionStorage flag — a user who already chose
+   "stay in browser" by dismissing the prompt won't be re-asked
+   for the rest of the session.
+
+   The location hash is preserved so a challenge link
+   (https://danielgerberapps.github.io/oddio_beta.html#oc=...) opens
+   to the same challenge inside the app rather than the daily.       */
+(function tryLaunchApp(){
+  if(window.Capacitor)return; // already inside the app
+  const ua=navigator.userAgent||'';
+  // Exclude iPad-on-macOS which reports as Macintosh+Touch; the
+  // pure Macintosh string should NOT trigger an app launch.
+  const isIOS=/iPhone|iPad|iPod/.test(ua)||(ua.includes('Macintosh')&&navigator.maxTouchPoints>1);
+  const isAndroid=/Android/.test(ua);
+  if(!isIOS&&!isAndroid)return;
+  try{
+    if(sessionStorage.getItem('oddio_app_launch_tried'))return;
+    sessionStorage.setItem('oddio_app_launch_tried','1');
+  }catch(e){/* private mode etc — just attempt once anyway */}
+  // Build the deep link. The scheme below must be the one registered
+  // in the Capacitor app (capacitor.config.json -> server.androidScheme,
+  // and iOS Info.plist -> CFBundleURLSchemes). The host portion after
+  // the scheme is arbitrary for custom-scheme URLs — the app routes
+  // on the hash, not the host — but matching the canonical web host
+  // keeps logs and debugging readable. Hash carries challenge state.
+  const path=location.hash||'';
+  const deepLink='oddio://danielgerberapps.github.io/'+path;
+  // location.href is more reliable across browsers than an iframe
+  // hack for custom-scheme launches in 2025.
+  window.location.href=deepLink;
+})();
 
 // Defer to next frame so the just-built board has settled into layout
 requestAnimationFrame(fitToViewport);</script>
